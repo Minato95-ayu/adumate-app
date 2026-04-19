@@ -44,11 +44,33 @@ function SearchResults() {
   const router = useRouter();
   const query = searchParams.get("q") || "";
   const [newQuery, setNewQuery] = useState(query);
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [showSugg, setShowSugg] = useState(false);
   const [activeTab, setActiveTab] = useState<"all" | "video" | "telegram" | "notes">("all");
   const [aiSummary, setAiSummary] = useState("");
   const [summaryLoading, setSummaryLoading] = useState(false);
 
   const channels = getChannels(query);
+
+  // Suggestions
+  useEffect(() => {
+    if (newQuery.length < 2) { setSuggestions([]); return; }
+    const t = setTimeout(async () => {
+      try {
+        const r = await fetch(`/api/suggestions?q=${encodeURIComponent(newQuery)}`);
+        const d = await r.json();
+        setSuggestions(d.suggestions || []);
+        setShowSugg(true);
+      } catch { setSuggestions([]); }
+    }, 250);
+    return () => clearTimeout(t);
+  }, [newQuery]);
+
+  const goSearch = (q: string) => {
+    setShowSugg(false);
+    setSuggestions([]);
+    if (q.trim()) router.push(`/search?q=${encodeURIComponent(q.trim())}`);
+  };
 
   useEffect(() => {
     if (!query) return;
@@ -96,17 +118,35 @@ function SearchResults() {
       {/* Search Bar at top */}
       <div className="flex gap-3 mb-8">
         <div className="relative flex-1">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-primary" size={18} />
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-primary" size={20} />
           <input
             value={newQuery}
-            onChange={e => setNewQuery(e.target.value)}
-            onKeyDown={e => e.key === "Enter" && newQuery.trim() && router.push(`/search?q=${encodeURIComponent(newQuery.trim())}`)}
+            onChange={e => { setNewQuery(e.target.value); }}
+            onKeyDown={e => e.key === "Enter" && goSearch(newQuery)}
+            onFocus={() => suggestions.length > 0 && setShowSugg(true)}
+            onBlur={() => setTimeout(() => setShowSugg(false), 150)}
             className="w-full bg-card/80 border border-white/10 text-white rounded-2xl pl-12 pr-4 py-4 text-sm focus:ring-2 focus:ring-primary outline-none"
-            placeholder="Kuch bhi search karo..."
+            placeholder="Search: Newton's Laws, JEE Maths, Python..."
+            autoComplete="off"
           />
+          {/* Suggestions dropdown */}
+          <AnimatePresence>
+            {showSugg && suggestions.length > 0 && (
+              <motion.div initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }}
+                className="absolute top-full left-0 right-0 mt-2 bg-card border border-white/10 rounded-2xl overflow-hidden shadow-2xl z-50">
+                {suggestions.map((s, i) => (
+                  <button key={i} onMouseDown={() => goSearch(s)}
+                    className="w-full flex items-center gap-3 px-4 py-3 hover:bg-white/5 text-left transition-all border-b border-white/5 last:border-0">
+                    <Search size={14} className="text-muted-foreground shrink-0" />
+                    <span className="text-sm text-white">{s}</span>
+                  </button>
+                ))}
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
         <button
-          onClick={() => newQuery.trim() && router.push(`/search?q=${encodeURIComponent(newQuery.trim())}`)}
+          onClick={() => goSearch(newQuery)}
           className="bg-primary hover:bg-primary-hover text-white font-black px-6 rounded-2xl transition-all shadow-lg shadow-primary/20"
         >
           Go

@@ -239,31 +239,55 @@ export default function Dashboard() {
         )}
       </motion.div>
 
-      {/* === AI TEST HERO BANNER === */}
-      <motion.div
-        initial={{ opacity: 0, y: 15 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.25 }}
-        onClick={() => router.push("/test")}
-        className="mb-8 p-6 bg-gradient-to-r from-blue-600/20 via-indigo-600/20 to-purple-600/20 border border-blue-500/30 rounded-3xl cursor-pointer group hover:border-blue-500/60 transition-all relative overflow-hidden"
-      >
-        <div className="absolute right-4 top-0 bottom-0 w-40 flex items-center justify-center opacity-10 group-hover:opacity-20 transition-opacity pointer-events-none">
-          <Brain size={110} className="text-blue-400" />
-        </div>
-        <div className="relative z-10 flex items-center justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-2 mb-2">
-              <Brain size={18} className="text-blue-400" />
-              <span className="text-xs font-black text-blue-400 uppercase tracking-widest">AI Powered</span>
+      {/* === KNOWLEDGE FINDER (3D CARDS) === */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+        {[
+          {
+            icon: "🧠",
+            title: "AI Test Hub",
+            desc: "Topic likho — AI quiz banayega aur concept samjhayega",
+            color: "from-blue-600/20 to-indigo-600/20",
+            border: "border-blue-500/30",
+            path: "/test",
+            btn: "Start Test"
+          },
+          {
+            icon: "🔍",
+            title: "Resource Finder",
+            desc: "Videos, Notes, aur Telegram channels ek jagah dhundo",
+            color: "from-purple-600/20 to-pink-600/20",
+            border: "border-purple-500/30",
+            path: "/search?q=Newton's Laws",
+            btn: "Search Now"
+          },
+          {
+            icon: "📍",
+            title: "Service Map",
+            desc: "Nearby Libraries, Hostels aur Tutors mapping",
+            color: "from-orange-600/20 to-red-600/20",
+            border: "border-orange-500/30",
+            path: "/map",
+            btn: "Open Map"
+          },
+        ].map((card, i) => (
+          <motion.div
+            key={i}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 + (i * 0.1) }}
+            whileHover={{ y: -5, scale: 1.02 }}
+            onClick={() => router.push(card.path)}
+            className={`p-6 rounded-[2rem] bg-gradient-to-br ${card.color} border ${card.border} backdrop-blur-xl cursor-pointer group shadow-xl`}
+          >
+            <div className="text-4xl mb-4">{card.icon}</div>
+            <h3 className="text-xl font-black text-white mb-2">{card.title}</h3>
+            <p className="text-sm text-slate-300 mb-5 leading-relaxed">{card.desc}</p>
+            <div className="inline-flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white font-bold px-4 py-2 rounded-xl text-xs transition-all">
+              {card.btn} →
             </div>
-            <h3 className="text-xl font-black text-white mb-1">AI Test Hub 🎯</h3>
-            <p className="text-sm text-slate-300">Koi bhi topic, class ya subject — AI test banayega + result explanation</p>
-          </div>
-          <div className="flex items-center gap-2 bg-blue-500 group-hover:bg-blue-400 text-white font-black px-5 py-3 rounded-2xl transition-all text-sm shadow-lg shadow-blue-500/30 whitespace-nowrap shrink-0">
-            <Zap size={16} /> Start Test
-          </div>
-        </div>
-      </motion.div>
+          </motion.div>
+        ))}
+      </div>
 
       {/* === GLOBAL SEARCH === */}
       <motion.div

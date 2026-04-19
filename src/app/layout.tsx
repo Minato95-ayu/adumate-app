@@ -3,7 +3,6 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import Script from "next/script";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -67,9 +66,12 @@ export const metadata: Metadata = {
     creator: "@adumate_app",
   },
   icons: {
-    icon: [{ url: "/favicon.png", type: "image/png" }],
+    icon: [
+      { url: "/favicon.svg", type: "image/svg+xml" },
+      { url: "/favicon.png", type: "image/png" },
+    ],
     apple: "/favicon.png",
-    shortcut: "/favicon.png",
+    shortcut: "/favicon.svg",
   },
   manifest: "/manifest.json",
   alternates: {
@@ -104,7 +106,7 @@ const jsonLd = {
       "@id": `${BASE_URL}/#organization`,
       name: "Adumate",
       url: BASE_URL,
-      logo: { "@type": "ImageObject", url: `${BASE_URL}/favicon.png` },
+      logo: { "@type": "ImageObject", url: `${BASE_URL}/favicon.svg` },
       founder: {
         "@type": "Person",
         name: "Ayush Kaushik",
