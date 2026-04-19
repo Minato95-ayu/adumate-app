@@ -188,6 +188,28 @@ export default function ProfilePage() {
                 <><Save size={20} /> Update Profile</>
               )}
             </button>
+            {/* Student Learning Stats */}
+            {userData?.role === "student" && (
+              <div className="mt-12 pt-8 border-t border-white/5">
+                <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
+                  <CheckCircle size={22} className="text-primary" /> Learning Analytics
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div className="bg-white/5 border border-white/10 rounded-2xl p-6 text-center">
+                    <p className="text-muted text-xs uppercase tracking-widest mb-2">Tests Taken</p>
+                    <h4 className="text-3xl font-black text-white">{userData?.testsTaken || 0}</h4>
+                  </div>
+                  <div className="bg-white/5 border border-white/10 rounded-2xl p-6 text-center">
+                    <p className="text-muted text-xs uppercase tracking-widest mb-2">Average Score</p>
+                    <h4 className="text-3xl font-black text-primary">{userData?.avgScore || 0}%</h4>
+                  </div>
+                  <div className="bg-white/5 border border-white/10 rounded-2xl p-6 text-center">
+                    <p className="text-muted text-xs uppercase tracking-widest mb-2">AI Rank</p>
+                    <h4 className="text-3xl font-black text-blue-400">#{userData?.rank || "N/A"}</h4>
+                  </div>
+                </div>
+              </div>
+            )}
           </form>
         </motion.div>
       </div>

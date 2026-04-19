@@ -22,13 +22,24 @@ function LoginForm() {
     const provider = new GoogleAuthProvider();
     try {
       const result = await signInWithPopup(auth, provider);
-      const user = result.user;
-      
+      handleUserResult(result.user);
+    } catch (err: any) {
+      console.error(err);
+      if (err.code === "auth/popup-blocked") {
+        setError("Popup blocked! Please allow popups or try again.");
+      } else {
+        setError(err.message || "Failed to sign in with Google.");
+      }
+      setLoading(false);
+    }
+  };
+
+  const handleUserResult = async (user: any) => {
+    try {
       const userRef = doc(db, "users", user.uid);
       const userSnap = await getDoc(userRef);
       
       if (!userSnap.exists()) {
-        // Register new user
         await setDoc(userRef, {
           uid: user.uid,
           email: user.email,
@@ -41,18 +52,15 @@ function LoginForm() {
         if (roleQuery === "partner") router.push("/partner");
         else router.push("/dashboard");
       } else {
-        // Existing user
         const userData = userSnap.data();
         if (userData.role === "partner") router.push("/partner");
         else if (userData.role === "admin") router.push("/admin");
         else router.push("/dashboard");
       }
-      // Note: We deliberately DO NOT setLoading(false) here on success.
-      // This keeps the spinner active while Next.js routes to the dashboard.
-    } catch (err: any) {
-      console.error(err);
-      setError(err.message || "Failed to sign in with Google.");
-      setLoading(false); // Only stop loading if there is an error
+    } catch (e) {
+      console.error(e);
+      setError("Database error. Please try again.");
+      setLoading(false);
     }
   };
 

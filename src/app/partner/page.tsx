@@ -3,8 +3,8 @@ import { useState, useEffect } from "react";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { PlusCircle, Users, DollarSign, Clock, CheckCircle, XCircle, Package } from "lucide-react";
 import Link from "next/link";
-import { motion } from "framer-motion";
-import { collection, query, where, getDocs, doc, updateDoc } from "firebase/firestore";
+import { motion, AnimatePresence } from "framer-motion";
+import { collection, query, where, getDocs, doc, updateDoc, onSnapshot } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
 
 export default function PartnerDashboard() {
@@ -12,6 +12,7 @@ export default function PartnerDashboard() {
   const [studentRequests, setStudentRequests] = useState<any[]>([]);
   const [stats, setStats] = useState({ earnings: 0, totalStudents: 0, pendingRequests: 0 });
   const [loading, setLoading] = useState(true);
+  const [newRequestAlert, setNewRequestAlert] = useState<string | null>(null);
 
   const fetchDashboardData = async () => {
     if (!auth.currentUser) return;
@@ -19,13 +20,13 @@ export default function PartnerDashboard() {
       // 1. Fetch Partner's Services
       const qServices = query(collection(db, "services"), where("partnerId", "==", auth.currentUser.uid));
       const snapServices = await getDocs(qServices);
-      const myServices = snapServices.docs.map(d => ({ id: d.id, ...d.data() }));
+      const myServices: any[] = snapServices.docs.map(d => ({ id: d.id, ...d.data() as any }));
       setServices(myServices);
 
       // 2. Fetch Incoming Requests for those services
       const qRequests = query(collection(db, "requests"), where("partnerId", "==", auth.currentUser.uid));
       const snapRequests = await getDocs(qRequests);
-      const allRequests = snapRequests.docs.map(d => ({ id: d.id, ...d.data() }));
+      const allRequests: any[] = snapRequests.docs.map(d => ({ id: d.id, ...d.data() as any }));
       
       // Enqueue service details into requests
       const enrichedRequests = allRequests.map(req => {
@@ -55,8 +56,26 @@ export default function PartnerDashboard() {
   };
 
   useEffect(() => {
-    const timer = setTimeout(() => { fetchDashboardData(); }, 1000);
-    return () => clearTimeout(timer);
+    fetchDashboardData();
+    
+    // Real-time listener for NEW requests
+    if (!auth.currentUser) return;
+    const q = query(collection(db, "requests"), where("partnerId", "==", auth.currentUser.uid));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      snapshot.docChanges().forEach((change) => {
+        if (change.type === "added") {
+          const data = change.doc.data();
+          if (data.status === "pending") {
+            setNewRequestAlert(`Naya Student Aaya! Check kijiye.`);
+            setTimeout(() => setNewRequestAlert(null), 5000);
+          }
+        }
+      });
+      // Also refresh the lists
+      fetchDashboardData();
+    });
+
+    return () => unsubscribe();
   }, []);
 
   const handleRequest = async (requestId: string, newStatus: "approved" | "rejected") => {
@@ -72,6 +91,21 @@ export default function PartnerDashboard() {
     <ProtectedRoute allowedRoles={["partner"]}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
         
+        {/* Real-time Notification Alert */}
+        <AnimatePresence>
+          {newRequestAlert && (
+            <motion.div 
+              initial={{ opacity: 0, y: -100, scale: 0.5 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -100, scale: 0.5 }}
+              className="fixed top-24 left-1/2 -translate-x-1/2 z-[200] bg-primary text-white px-8 py-4 rounded-full font-black shadow-[0_0_40px_rgba(255,107,0,0.6)] border-2 border-white/20 flex items-center gap-3 animate-bounce"
+            >
+              <Users size={24} className="animate-pulse" />
+              {newRequestAlert.toUpperCase()}
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         {/* Top Header */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-4">
           <div>
@@ -97,8 +131,14 @@ export default function PartnerDashboard() {
               animate={{ opacity: 1, y: 0, rotateX: 0 }}
               transition={{ delay: i * 0.15, duration: 0.6, type: "spring" }}
               whileHover={{ scale: 1.05, rotateY: 5, translateZ: 10 }}
-              className={`bg-card/80 backdrop-blur-lg border border-white/10 rounded-3xl p-6 shadow-[0_15px_30px_rgba(0,0,0,0.4)] flex items-center gap-6 transform-style-preserve-3d relative overflow-hidden group`}
+              className={`bg-card/80 backdrop-blur-lg border ${stat.color === 'orange' && stats.pendingRequests > 0 ? 'border-primary shadow-[0_0_20px_rgba(255,107,0,0.3)] animate-pulse' : 'border-white/10'} rounded-3xl p-6 shadow-[0_15px_30px_rgba(0,0,0,0.4)] flex items-center gap-6 transform-style-preserve-3d relative overflow-hidden group`}
             >
+              {stat.color === 'orange' && stats.pendingRequests > 0 && (
+                <div className="absolute top-2 right-2 flex h-3 w-3">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-3 w-3 bg-primary"></span>
+                </div>
+              )}
               <div className={`absolute top-[-20px] right-[-20px] w-32 h-32 bg-${stat.color}-500/10 rounded-full blur-2xl group-hover:bg-${stat.color}-500/20 transition-colors`}></div>
               <div className={`w-14 h-14 bg-${stat.color}-500/20 text-${stat.color}-500 rounded-2xl flex items-center justify-center transform translate-z-10 shadow-[0_0_15px_rgba(var(--${stat.color}-rgb),0.3)]`}>
                 {stat.icon}

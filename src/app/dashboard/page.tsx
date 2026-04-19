@@ -1,14 +1,18 @@
 "use client";
 import { useState, useEffect } from "react";
-import ProtectedRoute from "@/components/ProtectedRoute";
+import { useRouter } from "next/navigation";
 import ServiceCard from "@/components/ServiceCard";
-import { Search, Book, Home, Utensils, DoorOpen, GraduationCap, Briefcase, Bell, Clock, CheckCircle } from "lucide-react";
-import { motion } from "framer-motion";
-import { collection, query, where, getDocs, addDoc } from "firebase/firestore";
+import { Search, Book, Home, Utensils, DoorOpen, GraduationCap, Briefcase, Bell, Clock, CheckCircle, Brain, Zap, User, LogIn, Target, ChevronRight } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { collection, query, where, getDocs, addDoc, doc, setDoc, getDoc } from "firebase/firestore";
 import { db, auth } from "@/lib/firebase";
+import { onAuthStateChanged } from "firebase/auth";
+import ViralToolModal from "@/components/ViralToolModal";
+import Link from "next/link";
 
 const CATEGORIES = [
   { id: "all", name: "All", icon: <Search size={18} /> },
+  { id: "ai-test", name: "AI Test", icon: <Brain size={18} />, path: "/test" },
   { id: "library", name: "Library", icon: <Book size={18} /> },
   { id: "hostel", name: "Hostel", icon: <Home size={18} /> },
   { id: "mess", name: "Mess", icon: <Utensils size={18} /> },
@@ -17,256 +21,449 @@ const CATEGORIES = [
   { id: "job", name: "Jobs", icon: <Briefcase size={18} /> },
 ];
 
+const EXAMS = [
+  { id: "jee", label: "JEE / IIT", icon: "⚡" },
+  { id: "neet", label: "NEET", icon: "🧬" },
+  { id: "class10", label: "Class 10", icon: "📗" },
+  { id: "class12", label: "Class 12", icon: "📘" },
+  { id: "upsc", label: "UPSC", icon: "🇮🇳" },
+  { id: "ssc", label: "SSC / Bank", icon: "🏦" },
+  { id: "gate", label: "GATE", icon: "🔬" },
+  { id: "other", label: "Other", icon: "🎯" },
+];
+
+const VIRAL_TOOLS = [
+  { id: "doubt", name: "AI Doubt Solver", desc: "Photo khicho, solution pao", icon: "📸", color: "from-purple-500/20 to-indigo-500/20", border: "border-purple-500/30", path: null },
+  { id: "1v1", name: "1v1 Challenge", desc: "Dosto ko harao", icon: "⚔️", color: "from-red-500/20 to-orange-500/20", border: "border-red-500/30", path: null },
+];
+
 export default function Dashboard() {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [services, setServices] = useState<any[]>([]);
   const [myRequests, setMyRequests] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [userName, setUserName] = useState("Student");
+  const [user, setUser] = useState<any>(null);
+  const [userName, setUserName] = useState("Guest");
+  const [selectedTool, setSelectedTool] = useState<string | null>(null);
+  const [selectedExam, setSelectedExam] = useState<string>("");
+  const [savingExam, setSavingExam] = useState(false);
 
+  // Auth state listener
   useEffect(() => {
-    const fetchData = async () => {
-      if (!auth.currentUser) return;
-      try {
-        // Fetch User Info
-        const userPhone = auth.currentUser.phoneNumber;
-        setUserName(userPhone ? userPhone : "Student");
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      setUser(firebaseUser);
+      if (firebaseUser) {
+        setUserName(firebaseUser.displayName || firebaseUser.phoneNumber || "Student");
+        // Load saved exam preference from Firestore
+        try {
+          const userDoc = await getDoc(doc(db, "users", firebaseUser.uid));
+          if (userDoc.exists()) {
+            const data = userDoc.data();
+            if (data.examTarget) setSelectedExam(data.examTarget);
+          }
+        } catch { }
+      }
+    });
+    return () => unsubscribe();
+  }, []);
 
-        // Fetch Live Services
+  // Fetch services (public - no login required)
+  useEffect(() => {
+    const fetchServices = async () => {
+      try {
         const qServices = query(collection(db, "services"), where("approved", "==", true));
         const snapServices = await getDocs(qServices);
-        const fetchedServices = snapServices.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        const fetchedServices: any[] = snapServices.docs.map(d => ({ id: d.id, ...d.data() as any }));
         setServices(fetchedServices);
-
-        // Fetch My Activity
-        const qRequests = query(collection(db, "requests"), where("studentId", "==", auth.currentUser.uid));
-        const snapRequests = await getDocs(qRequests);
-        const fetchedRequests = snapRequests.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        
-        // Match request service IDs to service names
-        const enrichedRequests = fetchedRequests.map(req => {
-          const serviceDetails = fetchedServices.find(s => s.id === req.serviceId);
-          return { ...req, serviceName: serviceDetails?.name || "Unknown Service" };
-        });
-        setMyRequests(enrichedRequests);
-
-      } catch (error) {
-        console.error("Error fetching data", error);
-      } finally {
+      } catch { } finally {
         setLoading(false);
       }
     };
-    
-    const timer = setTimeout(() => { fetchData(); }, 1000);
+    const timer = setTimeout(fetchServices, 500);
     return () => clearTimeout(timer);
   }, []);
 
+  // Fetch user requests (only when logged in)
+  useEffect(() => {
+    if (!user) return;
+    const fetchRequests = async () => {
+      try {
+        const qRequests = query(collection(db, "requests"), where("studentId", "==", user.uid));
+        const snapRequests = await getDocs(qRequests);
+        const reqs: any[] = snapRequests.docs.map(d => ({ id: d.id, ...d.data() as any }));
+        setMyRequests(reqs);
+      } catch { }
+    };
+    fetchRequests();
+  }, [user]);
+
+  const handleSaveExam = async (examId: string) => {
+    setSelectedExam(examId);
+    if (!user) return; // Save locally if not logged in
+    setSavingExam(true);
+    try {
+      await setDoc(doc(db, "users", user.uid), { examTarget: examId }, { merge: true });
+    } catch { } finally {
+      setSavingExam(false);
+    }
+  };
+
   const handleJoin = async (service: any) => {
-    if (!auth.currentUser) return alert("Please login first");
+    if (!user) {
+      router.push("/login?role=student");
+      return;
+    }
     try {
       await addDoc(collection(db, "requests"), {
-        studentId: auth.currentUser.uid,
+        studentId: user.uid,
         serviceId: service.id,
         partnerId: service.partnerId,
         status: "pending",
-        paymentStatus: "completed", 
+        paymentStatus: "completed",
         amount: service.price,
         platformFee: 19,
         createdAt: new Date().toISOString()
       });
       alert(`Request sent! ₹${service.price + 19} will be deducted upon approval.`);
-      // Optimistic update
-      setMyRequests([...myRequests, { serviceName: service.name, status: "pending", createdAt: new Date().toISOString() }]);
+      setMyRequests(prev => [...prev, { serviceName: service.name, status: "pending" }]);
     } catch (e) {
-      console.error(e);
       alert("Error processing request");
     }
   };
 
   const filteredServices = services.filter(service => {
     const matchesTab = activeTab === "all" || service.type === activeTab;
-    const matchesSearch = service.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                          service.location.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesSearch = service.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      service.location?.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesTab && matchesSearch;
   });
 
+  const examLabel = EXAMS.find(e => e.id === selectedExam);
+
   return (
-    <ProtectedRoute allowedRoles={["student"]}>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
-        
-        {/* Welcome Section */}
-        <motion.div 
-          initial={{ opacity: 0, y: -30, rotateX: 20 }}
-          animate={{ opacity: 1, y: 0, rotateX: 0 }}
-          transition={{ duration: 0.6, type: "spring", bounce: 0.4 }}
-          className="flex justify-between items-center mb-8 perspective-1000"
-        >
-          <div>
-            <h1 className="text-3xl font-extrabold text-foreground drop-shadow-md">Hi {userName} 👋</h1>
-            <p className="text-muted mt-1 text-lg">Find your perfect study setup</p>
-          </div>
-          <motion.button 
-            whileHover={{ scale: 1.1, rotate: 15 }}
-            whileTap={{ scale: 0.9 }}
-            className="bg-white/5 p-3 rounded-full hover:bg-white/10 transition-colors relative shadow-[0_0_15px_rgba(255,255,255,0.05)]"
-          >
-            <Bell size={24} className="text-foreground" />
-            <span className="absolute top-2 right-2 w-2.5 h-2.5 bg-primary rounded-full animate-pulse"></span>
-          </motion.button>
-        </motion.div>
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
 
-        {/* Search */}
-        <motion.div 
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.5, delay: 0.2 }}
-          className="relative mb-8 perspective-1000"
-        >
-          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-            <Search className="text-muted" size={20} />
+      {/* === HERO SECTION === */}
+      <motion.div
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="mb-8"
+      >
+        {user ? (
+          /* LOGGED IN HERO */
+          <div className="flex justify-between items-start">
+            <div>
+              <h1 className="text-3xl font-extrabold text-white">
+                Hi {userName.split(" ")[0]} 👋
+              </h1>
+              <p className="text-muted-foreground mt-1">
+                {examLabel ? `Preparing for ${examLabel.icon} ${examLabel.label}` : "Apna exam target set karo 👇"}
+              </p>
+            </div>
+            <div className="flex items-center gap-3">
+              <motion.button whileHover={{ scale: 1.1 }} className="bg-white/5 p-3 rounded-full hover:bg-white/10 relative">
+                <Bell size={22} className="text-foreground" />
+                <span className="absolute top-2 right-2 w-2 h-2 bg-primary rounded-full animate-pulse" />
+              </motion.button>
+              <div className="w-10 h-10 bg-primary/20 border border-primary/30 rounded-full flex items-center justify-center">
+                <User size={18} className="text-primary" />
+              </div>
+            </div>
           </div>
-          <input
-            type="text"
-            placeholder="Search libraries, hostels, location..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-card/80 backdrop-blur-xl border border-white/10 text-foreground text-lg rounded-2xl focus:ring-2 focus:ring-primary block pl-12 p-4 shadow-[0_8px_30px_rgb(0,0,0,0.4)] transition-all transform hover:translate-z-5"
-          />
-        </motion.div>
+        ) : (
+          /* GUEST HERO - Login Prompt */
+          <div className="relative overflow-hidden bg-gradient-to-r from-primary/10 via-orange-500/5 to-transparent border border-primary/20 rounded-3xl p-6">
+            <div className="absolute right-0 top-0 bottom-0 flex items-center pr-8 opacity-5">
+              <User size={120} />
+            </div>
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div>
+                <h1 className="text-2xl font-extrabold text-white mb-1">Welcome to Adumate! 🎓</h1>
+                <p className="text-slate-300 text-sm">Login karo — apna exam save karo, search history dekho, AI tests track karo</p>
+              </div>
+              <div className="flex gap-3 shrink-0">
+                <Link href="/login?role=student"
+                  className="flex items-center gap-2 bg-primary hover:bg-primary-hover text-white font-black px-5 py-3 rounded-2xl transition-all shadow-lg shadow-primary/20 text-sm">
+                  <LogIn size={16} /> Login / Sign Up
+                </Link>
+              </div>
+            </div>
+          </div>
+        )}
+      </motion.div>
 
-        {/* Categories Quick Access */}
-        <motion.div 
-          initial={{ opacity: 0, x: -30 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.5, delay: 0.3 }}
-          className="flex overflow-x-auto pb-6 mb-10 gap-4 custom-scrollbar perspective-1000"
-        >
-          {CATEGORIES.map((cat, i) => (
-            <motion.button
-              key={cat.id}
-              onClick={() => setActiveTab(cat.id)}
-              whileHover={{ scale: 1.05, rotateY: 10, translateZ: 10 }}
-              whileTap={{ scale: 0.95 }}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4 + (i * 0.05) }}
-              className={`flex flex-col items-center gap-2 px-6 py-4 rounded-2xl whitespace-nowrap transition-colors font-medium min-w-[110px] transform-style-preserve-3d ${
-                activeTab === cat.id 
-                  ? "bg-gradient-to-br from-primary to-orange-600 text-white shadow-[0_10px_20px_rgba(255,107,0,0.4)] border border-primary/50" 
-                  : "bg-card/60 backdrop-blur-md text-muted hover:bg-white/10 border border-white/10 shadow-lg hover:shadow-xl"
+      {/* === EXAM TARGET SELECTOR === */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.15 }}
+        className="mb-8 bg-card/50 border border-white/10 rounded-3xl p-5"
+      >
+        <div className="flex items-center gap-2 mb-4">
+          <Target size={18} className="text-primary" />
+          <h2 className="font-black text-white text-sm uppercase tracking-widest">
+            Exam Target {!user && <span className="text-xs text-muted-foreground font-normal ml-2">(Login karo save karne ke liye)</span>}
+          </h2>
+          {savingExam && <span className="text-xs text-primary ml-auto">Saving...</span>}
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {EXAMS.map(exam => (
+            <button
+              key={exam.id}
+              onClick={() => handleSaveExam(exam.id)}
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-sm font-bold border transition-all ${
+                selectedExam === exam.id
+                  ? "bg-primary text-white border-primary shadow-lg shadow-primary/20"
+                  : "bg-white/5 border-white/10 text-muted-foreground hover:bg-primary/10 hover:border-primary/30 hover:text-white"
               }`}
             >
-              <div className={`${activeTab === cat.id ? "text-white" : "text-primary"} transform translate-z-10`}>
-                {cat.icon}
-              </div>
-              <span className="text-sm transform translate-z-5">{cat.name}</span>
-            </motion.button>
+              <span>{exam.icon}</span> {exam.label}
+            </button>
           ))}
-        </motion.div>
+        </div>
+        {selectedExam && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+            className="mt-4 p-3 bg-primary/10 border border-primary/20 rounded-xl flex items-center gap-3">
+            <Zap size={16} className="text-primary" />
+            <p className="text-sm text-primary font-bold">
+              {examLabel?.label} ka AI test do →
+            </p>
+            <button onClick={() => router.push(`/test?topic=${encodeURIComponent(examLabel?.label || selectedExam)}`)}
+              className="ml-auto text-xs bg-primary text-white px-3 py-1.5 rounded-lg font-bold hover:bg-primary-hover transition-all">
+              Start Now
+            </button>
+          </motion.div>
+        )}
+      </motion.div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          
-          {/* Main Listings */}
-          <div className="lg:col-span-2">
-            <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
-              📍 Nearby Services
-            </h2>
-            
-            {loading ? (
-               <div className="flex justify-center py-10"><div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin shadow-[0_0_15px_rgba(255,107,0,0.5)]"></div></div>
-            ) : filteredServices.length === 0 ? (
-              <motion.div 
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="bg-card/50 backdrop-blur-lg rounded-3xl border border-white/10 p-10 text-center shadow-2xl"
-              >
-                <Search size={40} className="mx-auto mb-4 text-muted/50" />
-                <h3 className="text-xl font-bold">No services found</h3>
-                <p className="text-muted mt-2">Try adjusting your search filters.</p>
-              </motion.div>
+      {/* === AI TEST HERO BANNER === */}
+      <motion.div
+        initial={{ opacity: 0, y: 15 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.25 }}
+        onClick={() => router.push("/test")}
+        className="mb-8 p-6 bg-gradient-to-r from-blue-600/20 via-indigo-600/20 to-purple-600/20 border border-blue-500/30 rounded-3xl cursor-pointer group hover:border-blue-500/60 transition-all relative overflow-hidden"
+      >
+        <div className="absolute right-4 top-0 bottom-0 w-40 flex items-center justify-center opacity-10 group-hover:opacity-20 transition-opacity pointer-events-none">
+          <Brain size={110} className="text-blue-400" />
+        </div>
+        <div className="relative z-10 flex items-center justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <Brain size={18} className="text-blue-400" />
+              <span className="text-xs font-black text-blue-400 uppercase tracking-widest">AI Powered</span>
+            </div>
+            <h3 className="text-xl font-black text-white mb-1">AI Test Hub 🎯</h3>
+            <p className="text-sm text-slate-300">Koi bhi topic, class ya subject — AI test banayega + result explanation</p>
+          </div>
+          <div className="flex items-center gap-2 bg-blue-500 group-hover:bg-blue-400 text-white font-black px-5 py-3 rounded-2xl transition-all text-sm shadow-lg shadow-blue-500/30 whitespace-nowrap shrink-0">
+            <Zap size={16} /> Start Test
+          </div>
+        </div>
+      </motion.div>
+
+      {/* === GLOBAL SEARCH === */}
+      <motion.div
+        initial={{ opacity: 0, scale: 0.98 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ delay: 0.3 }}
+        className="relative mb-4"
+      >
+        <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
+          <Search className="text-primary" size={22} />
+        </div>
+        <input
+          type="text"
+          id="global-search"
+          placeholder="🔍  Search: 'Class 10 Newton Laws', 'JEE Maths', 'React tutorial'..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && searchQuery.trim()) {
+              router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
+            }
+          }}
+          className="w-full bg-card/80 backdrop-blur-2xl border-2 border-white/10 text-foreground text-base rounded-3xl focus:ring-4 focus:ring-primary/20 focus:border-primary/50 block pl-14 pr-36 p-5 shadow-[0_10px_30px_rgba(0,0,0,0.4)] transition-all"
+        />
+        <button
+          onClick={() => searchQuery.trim() && router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}`)}
+          className="absolute right-3 inset-y-0 my-auto h-10 bg-primary hover:bg-primary-hover text-white font-black px-5 rounded-2xl transition-all text-sm shadow-lg shadow-primary/20"
+        >
+          Search 🚀
+        </button>
+      </motion.div>
+
+      {/* Quick search chips */}
+      <div className="flex flex-wrap gap-2 mb-8">
+        {(selectedExam === "jee"
+          ? ["JEE Maths", "JEE Physics", "JEE Chemistry", "JEE PYQ"]
+          : selectedExam === "neet"
+          ? ["NEET Biology", "NEET Chemistry", "NEET Physics", "NEET PYQ"]
+          : selectedExam === "class10"
+          ? ["Class 10 Science", "Class 10 Maths", "Class 10 Social", "Class 10 English"]
+          : selectedExam === "class12"
+          ? ["Class 12 Physics", "Class 12 Maths", "Class 12 Chemistry", "Class 12 Biology"]
+          : ["Class 10 Physics", "JEE Maths", "Python basics", "English Grammar", "GK India"]
+        ).map(chip => (
+          <button
+            key={chip}
+            onClick={() => router.push(`/search?q=${encodeURIComponent(chip)}`)}
+            className="text-xs px-4 py-2 bg-white/5 hover:bg-primary/10 border border-white/10 hover:border-primary/30 text-muted-foreground hover:text-primary rounded-full transition-all font-medium"
+          >
+            {chip}
+          </button>
+        ))}
+      </div>
+
+      {/* === VIRAL TOOLS === */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-10">
+        {VIRAL_TOOLS.map((tool, i) => (
+          <motion.div
+            key={tool.id}
+            onClick={() => { if (tool.path) router.push(tool.path); else setSelectedTool(tool.id); }}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.35 + (i * 0.1) }}
+            whileHover={{ y: -6, scale: 1.02 }}
+            className={`p-6 rounded-3xl bg-gradient-to-br ${tool.color} border ${tool.border} backdrop-blur-lg cursor-pointer group relative overflow-hidden`}
+          >
+            <div className="absolute -right-4 -bottom-4 text-8xl opacity-10 group-hover:opacity-20 transition-opacity">
+              {tool.icon}
+            </div>
+            <div className="relative z-10">
+              <div className="text-4xl mb-3">{tool.icon}</div>
+              <h3 className="text-xl font-bold text-white mb-1">{tool.name}</h3>
+              <p className="text-sm text-slate-300">{tool.desc}</p>
+            </div>
+            <div className="mt-4 text-xs font-bold text-primary flex items-center gap-1">
+              LAUNCH NOW <ChevronRight size={14} />
+            </div>
+          </motion.div>
+        ))}
+      </div>
+
+      {/* === CATEGORIES === */}
+      <motion.div
+        initial={{ opacity: 0, x: -30 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ duration: 0.5, delay: 0.4 }}
+        className="flex overflow-x-auto pb-4 mb-8 gap-3 custom-scrollbar"
+      >
+        {CATEGORIES.map((cat, i) => (
+          <motion.button
+            key={cat.id}
+            onClick={() => { if ((cat as any).path) router.push((cat as any).path); else setActiveTab(cat.id); }}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.45 + (i * 0.05) }}
+            className={`flex flex-col items-center gap-2 px-5 py-4 rounded-2xl whitespace-nowrap transition-colors font-medium min-w-[100px] ${
+              activeTab === cat.id
+                ? "bg-gradient-to-br from-primary to-orange-600 text-white shadow-[0_8px_20px_rgba(255,107,0,0.3)] border border-primary/50"
+                : "bg-card/60 backdrop-blur-md text-muted hover:bg-white/10 border border-white/10"
+            }`}
+          >
+            <div className={`${activeTab === cat.id ? "text-white" : "text-primary"}`}>{cat.icon}</div>
+            <span className="text-xs">{cat.name}</span>
+          </motion.button>
+        ))}
+      </motion.div>
+
+      {/* === SERVICES GRID + ACTIVITY SIDEBAR === */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+
+        {/* Services */}
+        <div className="lg:col-span-2">
+          <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">📍 Nearby Services</h2>
+          {loading ? (
+            <div className="flex justify-center py-10">
+              <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+            </div>
+          ) : filteredServices.length === 0 ? (
+            <div className="bg-card/50 backdrop-blur-lg rounded-3xl border border-white/10 p-10 text-center">
+              <Search size={40} className="mx-auto mb-4 text-muted/50" />
+              <h3 className="text-xl font-bold">No services found</h3>
+              <p className="text-muted mt-2">Try adjusting filters.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {filteredServices.map((service, index) => (
+                <motion.div
+                  key={service.id}
+                  initial={{ opacity: 0, y: 30 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: index * 0.08 }}
+                >
+                  <ServiceCard
+                    type={service.type}
+                    name={service.name}
+                    description={service.description}
+                    price={service.price}
+                    location={service.location}
+                    seats={service.seats}
+                    image={service.images?.[0]}
+                    onJoin={() => handleJoin(service)}
+                  />
+                </motion.div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Sidebar */}
+        <motion.div initial={{ opacity: 0, x: 50 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }}>
+          <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">📊 My Activity</h2>
+          <div className="bg-card/60 backdrop-blur-xl border border-white/10 rounded-3xl p-6 shadow-xl">
+            {!user ? (
+              <div className="text-center py-8">
+                <User size={36} className="mx-auto text-muted/50 mb-3" />
+                <p className="text-muted-foreground text-sm mb-4">Login karo apni activity dekhne ke liye</p>
+                <Link href="/login?role=student"
+                  className="inline-flex items-center gap-2 bg-primary text-white font-bold px-5 py-2.5 rounded-xl text-sm hover:bg-primary-hover transition-all">
+                  <LogIn size={14} /> Login Now
+                </Link>
+              </div>
+            ) : myRequests.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <p className="text-sm">Abhi tak koi service join nahi ki.</p>
+              </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 perspective-1000">
-                {filteredServices.map((service, index) => (
-                  <motion.div 
-                    key={service.id} 
-                    initial={{ opacity: 0, y: 50, rotateX: 20 }} 
-                    whileInView={{ opacity: 1, y: 0, rotateX: 0 }} 
-                    viewport={{ once: true, margin: "-50px" }}
-                    transition={{ delay: index * 0.1, duration: 0.6, type: "spring" }}
-                    whileHover={{ scale: 1.02, rotateY: 5, rotateX: -2, translateZ: 20 }}
-                    className="transform-style-preserve-3d"
+              <div className="space-y-3">
+                {myRequests.map((req, idx) => (
+                  <motion.div
+                    key={idx}
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: idx * 0.1 }}
+                    className="flex justify-between items-center p-4 bg-background/80 rounded-2xl border border-white/5"
                   >
-                    <ServiceCard
-                      type={service.type}
-                      name={service.name}
-                      description={service.description}
-                      price={service.price}
-                      location={service.location}
-                      seats={service.seats}
-                      image={service.images?.[0]}
-                      onJoin={() => handleJoin(service)}
-                    />
+                    <div>
+                      <p className="font-bold text-white text-sm">{req.serviceName || "Service"}</p>
+                      <p className="text-xs text-muted mt-0.5">₹{req.amount} + ₹19 fee</p>
+                    </div>
+                    {req.status === "approved" ? (
+                      <span className="flex items-center gap-1 text-green-400 text-xs font-bold"><CheckCircle size={12} /> Joined</span>
+                    ) : req.status === "rejected" ? (
+                      <span className="text-red-400 text-xs font-bold">Rejected</span>
+                    ) : (
+                      <span className="flex items-center gap-1 text-orange-400 text-xs font-bold"><Clock size={12} /> Pending</span>
+                    )}
                   </motion.div>
                 ))}
               </div>
             )}
           </div>
+        </motion.div>
 
-          {/* Sidebar: My Activity */}
-          <motion.div
-            initial={{ opacity: 0, x: 50 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-          >
-            <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
-              📊 My Activity
-            </h2>
-            <div className="bg-card/60 backdrop-blur-xl border border-white/10 rounded-3xl p-6 shadow-[0_15px_40px_rgba(0,0,0,0.5)] h-fit relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-3xl pointer-events-none"></div>
-              {myRequests.length === 0 ? (
-                <div className="text-center py-10 text-muted">
-                  <p>You haven't joined any services yet.</p>
-                </div>
-              ) : (
-                <div className="space-y-4 relative z-10">
-                  {myRequests.map((req, idx) => (
-                    <motion.div 
-                      key={idx}
-                      initial={{ opacity: 0, x: 20 }}
-                      whileInView={{ opacity: 1, x: 0 }}
-                      viewport={{ once: true }}
-                      transition={{ delay: idx * 0.1 }}
-                      whileHover={{ scale: 1.02, x: -5 }}
-                      className="flex justify-between items-center p-4 bg-background/80 backdrop-blur-md rounded-2xl border border-white/5 shadow-md hover:shadow-primary/10 transition-all cursor-default"
-                    >
-                      <div>
-                        <p className="font-bold text-white text-sm">{req.serviceName}</p>
-                        <p className="text-xs text-muted mt-1">₹{req.amount} + ₹19 fee</p>
-                      </div>
-                      {req.status === "approved" ? (
-                        <span className="flex items-center gap-1 text-green-400 bg-green-400/10 px-2 py-1 rounded-lg text-xs font-bold shadow-[0_0_10px_rgba(74,222,128,0.2)]">
-                          <CheckCircle size={12} /> Joined
-                        </span>
-                      ) : req.status === "rejected" ? (
-                        <span className="flex items-center gap-1 text-red-400 bg-red-400/10 px-2 py-1 rounded-lg text-xs font-bold">
-                          Rejected
-                        </span>
-                      ) : (
-                        <span className="flex items-center gap-1 text-orange-400 bg-orange-400/10 px-2 py-1 rounded-lg text-xs font-bold shadow-[0_0_10px_rgba(251,146,60,0.2)]">
-                          <Clock size={12} /> Pending
-                        </span>
-                      )}
-                    </motion.div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </motion.div>
-          
-        </div>
       </div>
-    </ProtectedRoute>
+
+      {/* Viral Modal */}
+      <ViralToolModal toolId={selectedTool} onClose={() => setSelectedTool(null)} />
+    </div>
   );
 }
