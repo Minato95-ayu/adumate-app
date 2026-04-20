@@ -10,6 +10,14 @@ interface Question {
   explanation: string;
 }
 
+const GEMINI_MODELS = [
+  "gemini-2.0-flash",
+  "gemini-2.0-flash-lite",
+  "gemini-1.5-flash",
+  "gemini-1.5-flash-8b",
+  "gemini-1.0-pro",
+];
+
 interface StudyResult {
   notes: string | null;
   questions: Question[] | null;
@@ -31,15 +39,35 @@ export default function StudyHub() {
   const callGemini = async (prompt: string): Promise<string> => {
     const key = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
     if (!key) return "";
-    const body = {
-      contents: [{ parts: [{ text: prompt }] }]
-    };
-    const resp = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`,
-      { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }
-    );
-    const data = await resp.json();
-    return data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+
+    for (const model of GEMINI_MODELS) {
+      try {
+        const resp = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`,
+          { 
+            method: "POST", 
+            headers: { "Content-Type": "application/json" }, 
+            body: JSON.stringify({
+              contents: [{ parts: [{ text: prompt }] }]
+            }) 
+          }
+        );
+        const data = await resp.json();
+        
+        if (data.error) {
+          if (data.error.code === 429) continue; // Try next model on quota
+          if (data.error.code === 404) continue; // Try next model if not found
+          console.error(`Gemini Error (${model}):`, data.error);
+          continue;
+        }
+
+        const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (text) return text;
+      } catch (err) {
+        console.error(`Fetch Error (${model}):`, err);
+      }
+    }
+    return "";
   };
 
   const handleSearch = async () => {
