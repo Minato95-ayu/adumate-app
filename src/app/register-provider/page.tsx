@@ -2,8 +2,8 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { 
-  User, Camera, Book, MapPin, DollarSign, Youtube, 
-  Instagram, Facebook, MessageCircle, Send, CheckCircle, Loader2 
+  User, Camera, Book, MapPin, DollarSign, Video, 
+  Globe, MessageCircle, Send, CheckCircle, Loader2 
 } from "lucide-react";
 
 export default function RegisterProvider() {
@@ -129,7 +129,7 @@ export default function RegisterProvider() {
               <div className="space-y-2">
                 <label className="text-sm font-bold text-slate-300 ml-1">YouTube URL</label>
                 <div className="relative">
-                  <Youtube className="absolute left-4 top-1/2 -translate-y-1/2 text-red-500" size={18} />
+                  <Video className="absolute left-4 top-1/2 -translate-y-1/2 text-red-500" size={18} />
                   <input type="text" placeholder="https://youtube.com/..." className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 pl-12 pr-4 text-white focus:ring-2 focus:ring-red-500 outline-none" />
                 </div>
               </div>
@@ -137,7 +137,7 @@ export default function RegisterProvider() {
               <div className="space-y-2">
                 <label className="text-sm font-bold text-slate-300 ml-1">Instagram Username</label>
                 <div className="relative">
-                  <Instagram className="absolute left-4 top-1/2 -translate-y-1/2 text-pink-500" size={18} />
+                  <Camera className="absolute left-4 top-1/2 -translate-y-1/2 text-pink-500" size={18} />
                   <input type="text" placeholder="@username" className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 pl-12 pr-4 text-white focus:ring-2 focus:ring-pink-500 outline-none" />
                 </div>
               </div>

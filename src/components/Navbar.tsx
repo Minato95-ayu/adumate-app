@@ -16,7 +16,7 @@ export default function Navbar() {
             />
           </div>
           <span className="text-2xl font-black text-white tracking-tighter">
-            Adu<span className="text-primary">mate</span>
+            Adu<span className="text-primary">mate</span><span className="hidden sm:inline text-slate-500 font-medium ml-1 italic opacity-50">Dashboard</span>
           </span>
         </Link>
 

@@ -21,23 +21,24 @@ export default function ProfilePage() {
   const [address, setAddress] = useState("");
 
   useEffect(() => {
-    const fetchProfile = async () => {
-      if (!auth.currentUser) return;
-      const userRef = doc(db, "users", auth.currentUser.uid);
-      const userSnap = await getDoc(userRef);
-      if (userSnap.exists()) {
-        const data = userSnap.data();
-        setUserData(data);
-        setName(data.name || "");
-        setCollege(data.college || "");
-        setSemester(data.semester || "");
-        setUpiId(data.upiId || "");
-        setTimings(data.timings || "");
-        setAddress(data.address || "");
+    const unsubscribe = auth.onAuthStateChanged(async (user) => {
+      if (user) {
+        const userRef = doc(db, "users", user.uid);
+        const userSnap = await getDoc(userRef);
+        if (userSnap.exists()) {
+          const data = userSnap.data();
+          setUserData(data);
+          setName(data.name || "");
+          setCollege(data.college || "");
+          setSemester(data.semester || "");
+          setUpiId(data.upiId || "");
+          setTimings(data.timings || "");
+          setAddress(data.address || "");
+        }
+        setLoading(false);
       }
-      setLoading(false);
-    };
-    fetchProfile();
+    });
+    return () => unsubscribe();
   }, []);
 
   const handleUpdate = async (e: React.FormEvent) => {

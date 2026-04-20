@@ -2,7 +2,7 @@
 import { useParams, useRouter } from "next/navigation";
 import { providers } from "@/data/providers";
 import { 
-  Star, Youtube, Instagram, Facebook, MessageCircle, Send, 
+  Star, Video, Camera, Globe, MessageCircle, Send, 
   MapPin, Clock, Award, CheckCircle, ChevronLeft, Share2, Heart 
 } from "lucide-react";
 import { motion } from "framer-motion";
@@ -115,13 +115,13 @@ export default function ProviderProfile() {
                 <h3 className="text-xl font-black text-white mb-6">Social Media & Connect</h3>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                   <button className="flex items-center justify-center gap-2 bg-red-600/20 hover:bg-red-600 text-white py-4 rounded-2xl font-bold transition-all border border-red-600/30">
-                    <Youtube size={20} /> YouTube
+                    <Video size={20} /> YouTube
                   </button>
                   <button className="flex items-center justify-center gap-2 bg-gradient-to-tr from-purple-600/20 via-pink-600/20 to-orange-500/20 hover:from-purple-600 hover:to-orange-500 text-white py-4 rounded-2xl font-bold transition-all border border-pink-600/30">
-                    <Instagram size={20} /> Instagram
+                    <Camera size={20} /> Instagram
                   </button>
                   <button className="flex items-center justify-center gap-2 bg-blue-600/20 hover:bg-blue-600 text-white py-4 rounded-2xl font-bold transition-all border border-blue-600/30">
-                    <Facebook size={20} /> Facebook
+                    <Globe size={20} /> Facebook
                   </button>
                   <button className="flex items-center justify-center gap-2 bg-green-500/20 hover:bg-green-500 text-white py-4 rounded-2xl font-bold transition-all border border-green-500/30">
                     <MessageCircle size={20} /> WhatsApp

@@ -139,8 +139,8 @@ Rules:
     } catch (e: any) {
       clearInterval(msgTimer);
       const msg: string = e.message || "";
-      if (msg === "__QUOTA__") {
-        setError("🕐 Free AI limit khatam ho gayi! Thodi der (15-30 min) baad try karo.\n\n⚡ Token limit jald update hogi. Tab tak Quick Topics try karo!");
+      if (msg === "__ALL_PROVIDERS_EXHAUSTED__") {
+        setError("🕐 Sabhi AI providers (Groq, Gemini, DeepSeek, etc.) ki limit khatam ho gayi hai! \n\nShayad aapki API keys mein tokens khatam hain ya saare providers down hain. Thodi der baad try karein ya apni API keys check karein.");
       } else if (msg === "__NOKEY__") {
         setError("❌ API Key nahi mili. .env.local mein NEXT_PUBLIC_GEMINI_API_KEY add karo.");
       } else {

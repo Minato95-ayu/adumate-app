@@ -2,7 +2,7 @@
 import { useState, useMemo } from "react";
 import dynamic from "next/dynamic";
 import { providers } from "@/data/providers";
-import { Search, MapPin, Filter, Layers, Navigation } from "lucide-react";
+import { Search, MapPin, Filter, Layers, Navigation, Star } from "lucide-react";
 import { motion } from "framer-motion";
 
 // Dynamically import Map to prevent SSR errors

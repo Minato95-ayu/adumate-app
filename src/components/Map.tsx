@@ -4,7 +4,7 @@ import { MapContainer, TileLayer, Marker, Popup, useMap, CircleMarker, Polyline 
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { Provider } from "@/data/providers";
-import { Star, Youtube, Instagram, MessageCircle, MapPin, Navigation, Clock, Ruler } from "lucide-react";
+import { Star, Video, Camera, MessageCircle, MapPin, Navigation, Clock, Ruler, Globe, Send } from "lucide-react";
 
 // Fix for default marker icons in Leaflet + Next.js
 const defaultIcon = L.icon({
@@ -136,12 +136,12 @@ export default function Map({ providers, center = [28.6139, 77.2090] }: MapProps
                 <div className="grid grid-cols-2 gap-2 mb-3">
                   {p.social.youtube && (
                     <a href={p.social.youtube} target="_blank" className="flex items-center justify-center gap-1 bg-red-600/20 hover:bg-red-600/40 text-red-500 py-1.5 rounded-lg text-[10px] font-bold transition-all border border-red-500/20">
-                      <Youtube size={12} /> YouTube
+                      <Video size={12} /> YouTube
                     </a>
                   )}
                   {p.social.instagram && (
                     <a href={`https://instagram.com/${p.social.instagram}`} target="_blank" className="flex items-center justify-center gap-1 bg-pink-600/20 hover:bg-pink-600/40 text-pink-500 py-1.5 rounded-lg text-[10px] font-bold transition-all border border-pink-500/20">
-                      <Instagram size={12} /> Insta
+                      <Camera size={12} /> Insta
                     </a>
                   )}
                 </div>

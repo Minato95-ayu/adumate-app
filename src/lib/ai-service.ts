@@ -109,5 +109,5 @@ export async function multiCallAI(prompt: string, options: { json?: boolean } = 
     }
   }
 
-  throw new Error(lastError || "All AI providers failed. Please check your API keys.");
+  throw new Error("__ALL_PROVIDERS_EXHAUSTED__");
 }
