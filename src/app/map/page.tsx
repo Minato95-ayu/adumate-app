@@ -3,7 +3,8 @@ import { useState, useMemo, useEffect } from "react"; // Re-verified imports for
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import { providers } from "@/data/providers";
-import { Search, MapPin, Filter, Layers, Navigation, Star, X, List, Map as MapIcon } from "lucide-react";
+import { Search, MapPin, Filter, Layers, Navigation, Star, X, List, Map as MapIcon, Loader2 } from "lucide-react";
+import { ServiceCardSkeleton } from "@/components/ui/skeleton";
 import { motion, AnimatePresence } from "framer-motion";
 import { auth } from "@/lib/firebase";
 
@@ -193,9 +194,12 @@ export default function MapPage() {
               </div>
             </div>
             {loading && (
-              <div className="py-4 text-center">
-                <div className="w-6 h-6 border-2 border-primary/20 border-t-primary rounded-full animate-spin mx-auto mb-2"></div>
-                <p className="text-[10px] text-muted-foreground">Searching internet data...</p>
+              <div className="space-y-4">
+                {[...Array(3)].map((_, i) => (
+                  <div key={i} className="opacity-50">
+                    <ServiceCardSkeleton />
+                  </div>
+                ))}
               </div>
             )}
           </div>

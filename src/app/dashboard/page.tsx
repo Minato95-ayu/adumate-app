@@ -2,9 +2,10 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import ServiceCard from "@/components/ServiceCard";
+import { ServiceCardSkeleton } from "@/components/ui/skeleton";
 import { Search, Book, Home, Utensils, DoorOpen, GraduationCap, Briefcase, Bell, Clock, CheckCircle, Brain, Zap, User, LogIn, Target, ChevronRight } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { collection, query, where, getDocs, addDoc, doc, setDoc, getDoc } from "firebase/firestore";
+import { collection, query, where, getDocs, addDoc, doc, setDoc, getDoc, limit } from "firebase/firestore";
 import { db, auth } from "@/lib/firebase";
 import { onAuthStateChanged } from "firebase/auth";
 import ViralToolModal from "@/components/ViralToolModal";
@@ -73,7 +74,11 @@ export default function Dashboard() {
   useEffect(() => {
     const fetchServices = async () => {
       try {
-        const qServices = query(collection(db, "services"), where("approved", "==", true));
+        const qServices = query(
+          collection(db, "services"), 
+          where("approved", "==", true),
+          limit(20)
+        );
         const snapServices = await getDocs(qServices);
         const fetchedServices: any[] = snapServices.docs.map(d => ({ id: d.id, ...d.data() as any }));
         setServices(fetchedServices);
@@ -403,8 +408,10 @@ export default function Dashboard() {
         <div className="lg:col-span-2">
           <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">📍 Nearby Services</h2>
           {loading ? (
-            <div className="flex justify-center py-10">
-              <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {[...Array(4)].map((_, i) => (
+                <ServiceCardSkeleton key={i} />
+              ))}
             </div>
           ) : filteredServices.length === 0 ? (
             <div className="bg-card/50 backdrop-blur-lg rounded-3xl border border-white/10 p-10 text-center">

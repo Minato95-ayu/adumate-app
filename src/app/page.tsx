@@ -71,34 +71,6 @@ export default function HomePage() {
       <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] rounded-full bg-primary/20 blur-[150px] pointer-events-none" />
       <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-blue-600/20 blur-[150px] pointer-events-none" />
 
-      {/* CSS needed for 3D Transforms */}
-      <style dangerouslySetInnerHTML={{__html: `
-        .perspective-1000 { perspective: 1000px; }
-        .preserve-3d { transform-style: preserve-3d; }
-        .translate-z-24 { transform: translateZ(6rem); }
-        .translate-z-48 { transform: translateZ(12rem); }
-        .-translate-z-24 { transform: translateZ(-6rem); }
-        .-translate-z-48 { transform: translateZ(-12rem); }
-        .-rotate-y-90 { transform: rotateY(-90deg) translateZ(6rem); }
-        @media (min-width: 768px) { .-rotate-y-90 { transform: rotateY(-90deg) translateZ(12rem); } }
-        .rotate-y-90 { transform: rotateY(90deg) translateZ(6rem); }
-        @media (min-width: 768px) { .rotate-y-90 { transform: rotateY(90deg) translateZ(12rem); } }
-        .rotate-x-90 { transform: rotateX(90deg) translateZ(6rem); }
-        @media (min-width: 768px) { .rotate-x-90 { transform: rotateX(90deg) translateZ(12rem); } }
-        .-rotate-x-90 { transform: rotateX(-90deg) translateZ(6rem); }
-        @media (min-width: 768px) { .-rotate-x-90 { transform: rotateX(-90deg) translateZ(12rem); } }
-        .rotate-y-180 { transform: rotateY(180deg) translateZ(6rem); }
-        @media (min-width: 768px) { .rotate-y-180 { transform: rotateY(180deg) translateZ(12rem); } }
-        
-        .btn-3d {
-          transform-style: preserve-3d;
-          transition: transform 0.15s ease-out;
-        }
-        .btn-3d:active {
-          transform: translateY(4px) translateZ(-10px);
-        }
-      `}} />
-
       {/* Hero Section */}
       <main className="flex-1 flex flex-col items-center md:items-start justify-center text-center md:text-left px-6 lg:px-16 z-10 py-16 md:py-32 w-full max-w-7xl mx-auto relative">
         
@@ -383,10 +355,12 @@ export default function HomePage() {
                   <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent z-10"></div>
                   
                   {/* Founder Image */}
-                  <img 
+                  <Image 
                     src="/founder.jpg" 
                     alt="Ayush Kaushik - Founder & CEO" 
-                    className="w-full h-full object-cover object-top transition-transform duration-700 group-hover:scale-110"
+                    fill
+                    className="object-cover object-top transition-transform duration-700 group-hover:scale-110"
+                    sizes="(max-width: 768px) 100vw, 33vw"
                   />
                   
                   <div className="absolute bottom-6 left-6 z-20 transform translate-z-10">
