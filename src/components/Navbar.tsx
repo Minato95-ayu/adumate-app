@@ -20,13 +20,15 @@ export default function Navbar() {
           </span>
         </Link>
 
-        <div className="flex items-center gap-6">
-          <Link href="/dashboard" className="text-muted hover:text-white transition-colors font-medium">
-            Dashboard
-          </Link>
-          <Link href="/test" className="text-muted hover:text-white transition-colors font-medium">
-            AI Tests
-          </Link>
+        <div className="flex items-center gap-2 md:gap-6">
+          <div className="hidden md:flex items-center gap-6">
+            <Link href="/dashboard" className="text-muted hover:text-white transition-colors font-medium">
+              Dashboard
+            </Link>
+            <Link href="/test" className="text-muted hover:text-white transition-colors font-medium">
+              AI Tests
+            </Link>
+          </div>
           <Link href="/profile" className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-muted hover:bg-primary/20 hover:text-primary transition-all">
             <User size={20} />
           </Link>

@@ -166,7 +166,7 @@ export default function HomePage() {
                 Finder
               </span>
             </h2>
-            <p className="text-slate-400 text-lg max-w-xl mx-auto">
+            <p className="text-slate-400 text-sm md:text-lg max-w-xl mx-auto px-4">
               Koi bhi topic search karo — Videos, Notes, Telegram channels, aur AI Test ek jagah
             </p>
           </div>
@@ -180,22 +180,22 @@ export default function HomePage() {
             className="relative mb-8 perspective-1000 max-w-3xl mx-auto"
           >
             <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 via-purple-500/10 to-primary/20 rounded-3xl blur-xl" />
-            <div className="relative flex gap-3 bg-slate-900/80 backdrop-blur-2xl border border-white/10 rounded-3xl p-3 shadow-[0_20px_60px_rgba(0,0,0,0.5)]">
-              <div className="flex-1 flex items-center gap-3 bg-white/5 rounded-2xl px-5">
-                <Search className="text-blue-400 shrink-0" size={20} />
+            <div className="relative flex flex-col sm:flex-row gap-3 bg-slate-900/80 backdrop-blur-2xl border border-white/10 rounded-3xl p-3 shadow-[0_20px_60px_rgba(0,0,0,0.5)]">
+              <div className="flex-1 flex items-center gap-3 bg-white/5 rounded-2xl px-4 md:px-5">
+                <Search className="text-blue-400 shrink-0" size={18} />
                 <input
                   value={kfQuery}
                   onChange={e => setKfQuery(e.target.value)}
                   onKeyDown={e => e.key === "Enter" && kfQuery.trim() && router.push(`/search?q=${encodeURIComponent(kfQuery.trim())}`)}
-                  placeholder="e.g. Newton's Laws, React Hooks, Mughal Empire..."
-                  className="flex-1 bg-transparent text-white py-4 text-base outline-none placeholder:text-slate-500"
+                  placeholder="e.g. Newton's Laws, React Hooks..."
+                  className="flex-1 bg-transparent text-white py-3 md:py-4 text-sm md:text-base outline-none placeholder:text-slate-500 min-w-0"
                 />
               </div>
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => kfQuery.trim() && router.push(`/search?q=${encodeURIComponent(kfQuery.trim())}`)}
-                className="bg-gradient-to-br from-blue-500 to-purple-600 hover:from-blue-400 hover:to-purple-500 text-white font-black px-7 py-4 rounded-2xl transition-all shadow-lg shadow-blue-500/30 text-sm whitespace-nowrap"
+                className="bg-gradient-to-br from-blue-500 to-purple-600 hover:from-blue-400 hover:to-purple-500 text-white font-black px-6 py-3.5 md:py-4 rounded-2xl transition-all shadow-lg shadow-blue-500/30 text-xs md:text-sm whitespace-nowrap"
               >
                 Find Now ✨
               </motion.button>

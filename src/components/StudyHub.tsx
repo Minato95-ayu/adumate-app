@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { PlayCircle, FileText, HelpCircle, Loader2, Search, CheckCircle, XCircle, Trophy } from "lucide-react";
+import { multiCallAI } from "@/lib/ai-service";
 
 interface Question {
   question: string;
@@ -37,37 +38,13 @@ export default function StudyHub() {
   const [score, setScore] = useState(0);
 
   const callGemini = async (prompt: string): Promise<string> => {
-    const key = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
-    if (!key) return "";
-
-    for (const model of GEMINI_MODELS) {
-      try {
-        const resp = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`,
-          { 
-            method: "POST", 
-            headers: { "Content-Type": "application/json" }, 
-            body: JSON.stringify({
-              contents: [{ parts: [{ text: prompt }] }]
-            }) 
-          }
-        );
-        const data = await resp.json();
-        
-        if (data.error) {
-          if (data.error.code === 429) continue; // Try next model on quota
-          if (data.error.code === 404) continue; // Try next model if not found
-          console.error(`Gemini Error (${model}):`, data.error);
-          continue;
-        }
-
-        const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-        if (text) return text;
-      } catch (err) {
-        console.error(`Fetch Error (${model}):`, err);
-      }
+    try {
+      const res = await multiCallAI(prompt);
+      return res.text;
+    } catch (err) {
+      console.error("AI Service Error:", err);
+      return "";
     }
-    return "";
   };
 
   const handleSearch = async () => {

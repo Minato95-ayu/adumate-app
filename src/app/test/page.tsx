@@ -3,6 +3,7 @@ import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Brain, CheckCircle, XCircle, Award, RefreshCcw, Sparkles, BookOpen, Loader2, Zap } from "lucide-react";
+import { multiCallAI } from "@/lib/ai-service";
 
 const QUICK_TOPICS = [
   { label: "Class 10 Science — Motion", icon: "🔬" },
@@ -24,42 +25,17 @@ const GEMINI_MODELS = [
   "gemini-1.0-pro",
 ];
 
+// This function is now deprecated in favor of multiCallAI from ai-service.ts
 async function callGemini(prompt: string): Promise<string> {
-  const key = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
-  if (!key) throw new Error("__NOKEY__");
-
-  let hitQuota = false;
-  for (const model of GEMINI_MODELS) {
-    try {
-      const resp = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: prompt }] }],
-            generationConfig: {
-              temperature: 0.5,
-              maxOutputTokens: 2048,
-              responseMimeType: "application/json",
-            },
-          }),
-        }
-      );
-      const data = await resp.json();
-      if (data.error) {
-        const code = data.error.code;
-        if (code === 429) { hitQuota = true; continue; }  // quota — try next
-        if (code === 404 || code === 400) continue;        // model not found — try next
-        continue;
-      }
-      const text: string = data.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
-      if (text.trim()) return text;
-    } catch { /* network error, try next */ }
+  try {
+    const res = await multiCallAI(prompt, { json: true });
+    return res.text;
+  } catch (e: any) {
+    if (e.message.toLowerCase().includes("quota") || e.message.toLowerCase().includes("limit")) {
+      throw new Error("__QUOTA__");
+    }
+    throw e;
   }
-  // All models tried
-  if (hitQuota) throw new Error("__QUOTA__");
-  throw new Error("__FAILED__");
 }
 
 function parseQuestions(raw: string): any[] {
