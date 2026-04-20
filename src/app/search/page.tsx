@@ -110,17 +110,17 @@ function SearchResults() {
   return (
     <div className="max-w-5xl mx-auto px-4 py-8">
       {/* Search Bar at top */}
-      <div className="flex gap-3 mb-8">
+      <div className="flex gap-2 mb-8">
         <div className="relative flex-1">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-primary" size={20} />
+          <Search className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 text-primary" size={18} />
           <input
             value={newQuery}
             onChange={e => { setNewQuery(e.target.value); }}
             onKeyDown={e => e.key === "Enter" && goSearch(newQuery)}
             onFocus={() => suggestions.length > 0 && setShowSugg(true)}
             onBlur={() => setTimeout(() => setShowSugg(false), 150)}
-            className="w-full bg-card/80 border border-white/10 text-white rounded-2xl pl-12 pr-4 py-4 text-sm focus:ring-2 focus:ring-primary outline-none"
-            placeholder="Search: Newton's Laws, JEE Maths, Python..."
+            className="w-full bg-card/80 border border-white/10 text-white rounded-2xl pl-10 sm:pl-12 pr-4 py-3 sm:py-4 text-sm focus:ring-2 focus:ring-primary outline-none"
+            placeholder="Search topics..."
             autoComplete="off"
           />
           {/* Suggestions dropdown */}
@@ -141,27 +141,27 @@ function SearchResults() {
         </div>
         <button
           onClick={() => goSearch(newQuery)}
-          className="bg-primary hover:bg-primary-hover text-white font-black px-6 rounded-2xl transition-all shadow-lg shadow-primary/20"
+          className="bg-primary hover:bg-primary-hover text-white font-black px-4 sm:px-6 rounded-2xl transition-all shadow-lg shadow-primary/20 text-sm"
         >
           Go
         </button>
       </div>
 
       {/* Heading */}
-      <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
         <div>
-          <h1 className="text-2xl font-black text-white">Results for <span className="text-primary">"{query}"</span></h1>
-          <p className="text-muted-foreground text-sm mt-1">Videos • Telegram • Notes • AI Summary</p>
+          <h1 className="text-xl sm:text-2xl font-black text-white leading-tight">Results for <span className="text-primary">"{query}"</span></h1>
+          <p className="text-muted-foreground text-xs sm:text-sm mt-1">Videos • Telegram • Notes • AI Summary</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 w-full sm:w-auto">
           <a href={whatsappUrl} target="_blank" rel="noopener noreferrer"
-            className="flex items-center gap-2 bg-green-500 hover:bg-green-600 text-white font-bold px-4 py-2.5 rounded-xl text-sm transition-all shadow-lg shadow-green-500/20">
-            <Share2 size={14} /> WhatsApp Share
+            className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-green-500 hover:bg-green-600 text-white font-bold px-4 py-2.5 rounded-xl text-xs sm:text-sm transition-all shadow-lg shadow-green-500/20">
+            <Share2 size={14} /> Share
           </a>
           <button
             onClick={() => router.push(`/test?topic=${encodeURIComponent(query)}`)}
-            className="flex items-center gap-2 bg-primary hover:bg-primary-hover text-white font-bold px-4 py-2.5 rounded-xl text-sm transition-all shadow-lg shadow-primary/20">
-            <Zap size={14} /> Quick Test
+            className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-primary hover:bg-primary-hover text-white font-bold px-4 py-2.5 rounded-xl text-xs sm:text-sm transition-all shadow-lg shadow-primary/20">
+            <Zap size={14} /> Test
           </button>
         </div>
       </div>

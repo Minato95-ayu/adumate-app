@@ -3,7 +3,7 @@ import Link from "next/link";
 import { BookOpen, Home, Utensils, GraduationCap, Building, Search, Brain, Zap, Target, ChevronRight } from "lucide-react";
 import { motion, useMotionValue, useTransform, useSpring } from "framer-motion";
 import Image from "next/image";
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "@/lib/firebase";

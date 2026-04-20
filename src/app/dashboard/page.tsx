@@ -155,38 +155,38 @@ export default function Dashboard() {
           /* LOGGED IN HERO */
           <div className="flex justify-between items-start">
             <div>
-              <h1 className="text-3xl font-extrabold text-white">
+              <h1 className="text-2xl sm:text-3xl font-extrabold text-white">
                 Hi {userName.split(" ")[0]} 👋
               </h1>
-              <p className="text-muted-foreground mt-1">
+              <p className="text-muted-foreground text-xs sm:text-sm mt-1">
                 {examLabel ? `Preparing for ${examLabel.icon} ${examLabel.label}` : "Apna exam target set karo 👇"}
               </p>
             </div>
-            <div className="flex items-center gap-3">
-              <motion.button whileHover={{ scale: 1.1 }} className="bg-white/5 p-3 rounded-full hover:bg-white/10 relative">
-                <Bell size={22} className="text-foreground" />
-                <span className="absolute top-2 right-2 w-2 h-2 bg-primary rounded-full animate-pulse" />
+            <div className="flex items-center gap-2 sm:gap-3">
+              <motion.button whileHover={{ scale: 1.1 }} className="bg-white/5 p-2 sm:p-3 rounded-full hover:bg-white/10 relative">
+                <Bell size={20} className="text-foreground" />
+                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-primary rounded-full animate-pulse" />
               </motion.button>
-              <div className="w-10 h-10 bg-primary/20 border border-primary/30 rounded-full flex items-center justify-center">
-                <User size={18} className="text-primary" />
+              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-primary/20 border border-primary/30 rounded-full flex items-center justify-center">
+                <User size={16} className="text-primary" />
               </div>
             </div>
           </div>
         ) : (
           /* GUEST HERO - Login Prompt */
-          <div className="relative overflow-hidden bg-gradient-to-r from-primary/10 via-orange-500/5 to-transparent border border-primary/20 rounded-3xl p-6">
+          <div className="relative overflow-hidden bg-gradient-to-r from-primary/10 via-orange-500/5 to-transparent border border-primary/20 rounded-3xl p-5 sm:p-6">
             <div className="absolute right-0 top-0 bottom-0 flex items-center pr-8 opacity-5">
               <User size={120} />
             </div>
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 relative z-10">
               <div>
-                <h1 className="text-2xl font-extrabold text-white mb-1">Welcome to Adumate! 🎓</h1>
-                <p className="text-slate-300 text-sm">Login karo — apna exam save karo, search history dekho, AI tests track karo</p>
+                <h1 className="text-xl sm:text-2xl font-extrabold text-white mb-1">Welcome to Adumate! 🎓</h1>
+                <p className="text-slate-300 text-xs sm:text-sm">Login karo — apna exam save karo, aur AI features use karo</p>
               </div>
-              <div className="flex gap-3 shrink-0">
+              <div className="flex gap-3 shrink-0 w-full sm:w-auto">
                 <Link href="/login?role=student"
-                  className="flex items-center gap-2 bg-primary hover:bg-primary-hover text-white font-black px-5 py-3 rounded-2xl transition-all shadow-lg shadow-primary/20 text-sm">
-                  <LogIn size={16} /> Login / Sign Up
+                  className="w-full sm:w-auto flex items-center justify-center gap-2 bg-primary hover:bg-primary-hover text-white font-black px-5 py-3 rounded-2xl transition-all shadow-lg shadow-primary/20 text-sm">
+                  <LogIn size={16} /> Login
                 </Link>
               </div>
             </div>
@@ -199,21 +199,21 @@ export default function Dashboard() {
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.15 }}
-        className="mb-8 bg-card/50 border border-white/10 rounded-3xl p-5"
+        className="mb-8 bg-card/50 border border-white/10 rounded-3xl p-4 sm:p-5"
       >
         <div className="flex items-center gap-2 mb-4">
           <Target size={18} className="text-primary" />
-          <h2 className="font-black text-white text-sm uppercase tracking-widest">
-            Exam Target {!user && <span className="text-xs text-muted-foreground font-normal ml-2">(Login karo save karne ke liye)</span>}
+          <h2 className="font-black text-white text-[10px] sm:text-xs uppercase tracking-widest">
+            Exam Target {!user && <span className="hidden sm:inline text-muted-foreground font-normal ml-2">(Login to save)</span>}
           </h2>
-          {savingExam && <span className="text-xs text-primary ml-auto">Saving...</span>}
+          {savingExam && <span className="text-[10px] text-primary ml-auto">Saving...</span>}
         </div>
         <div className="flex flex-wrap gap-2">
           {EXAMS.map(exam => (
             <button
               key={exam.id}
               onClick={() => handleSaveExam(exam.id)}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-sm font-bold border transition-all ${
+              className={`flex items-center gap-2 px-3 py-2 sm:px-4 sm:py-2.5 rounded-xl sm:rounded-2xl text-xs sm:text-sm font-bold border transition-all ${
                 selectedExam === exam.id
                   ? "bg-primary text-white border-primary shadow-lg shadow-primary/20"
                   : "bg-white/5 border-white/10 text-muted-foreground hover:bg-primary/10 hover:border-primary/30 hover:text-white"
