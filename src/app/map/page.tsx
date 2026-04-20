@@ -89,7 +89,7 @@ export default function MapPage() {
   ];
 
   return (
-    <div className="relative flex flex-col h-[calc(100vh-72px)] overflow-hidden bg-[#0a0f1a]">
+    <div className="relative flex flex-col h-[calc(100vh-72px)] overflow-hidden bg-white">
       
       {/* Mobile Top Controls (Floating) */}
       <div className="absolute top-4 left-4 right-4 z-[40] md:hidden flex gap-2">
@@ -137,16 +137,16 @@ export default function MapPage() {
 
       <div className="flex h-full overflow-hidden">
         {/* Desktop Sidebar (Hidden on mobile) */}
-        <div className="hidden md:flex flex-col w-96 p-6 overflow-y-auto custom-scrollbar border-r border-white/5 bg-slate-900/30 backdrop-blur-xl z-20 shrink-0">
+        <div className="hidden md:flex flex-col w-96 p-6 overflow-y-auto custom-scrollbar border-r border-slate-200 bg-white z-20 shrink-0 shadow-xl">
           <div className="mb-8">
-            <h1 className="text-3xl font-black text-white mb-1 flex items-center gap-3">
+            <h1 className="text-3xl font-black text-slate-900 mb-1 flex items-center gap-3">
               <MapPin className="text-primary" size={24} /> Finder
             </h1>
-            <p className="text-muted-foreground text-xs">Nearby tutors aur services dekho</p>
+            <p className="text-slate-500 text-xs">Nearby tutors aur services dekho</p>
           </div>
 
           <div className="relative mb-6">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
             <input 
               type="text" 
               placeholder="Search by name or 'City, Area'..." 
@@ -176,9 +176,9 @@ export default function MapPage() {
                   }
                 }
               }}
-              className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 pl-12 pr-4 text-sm text-white focus:ring-2 focus:ring-primary outline-none transition-all"
+              className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-4 pl-12 pr-4 text-sm text-slate-900 focus:ring-2 focus:ring-primary outline-none transition-all"
             />
-            <p className="text-[9px] text-muted-foreground mt-2 px-1">Press Enter to search for a new area</p>
+            <p className="text-[9px] text-slate-400 mt-2 px-1">Press Enter to search for a new area</p>
           </div>
 
           <div className="space-y-6 mb-8">
@@ -206,21 +206,29 @@ export default function MapPage() {
 
           <div className="space-y-4">
              <div className="flex justify-between items-center mb-4">
-              <label className="text-xs font-black text-muted-foreground uppercase tracking-widest">{filteredProviders.length} Results</label>
+              <label className="text-xs font-black text-slate-400 uppercase tracking-widest">{filteredProviders.length} Results</label>
             </div>
             {filteredProviders.map(p => (
               <motion.div key={p.id}
                 whileHover={{ scale: 1.02 }}
-                className="group p-4 bg-white/5 hover:bg-white/10 border border-white/10 rounded-2xl cursor-pointer transition-all"
+                className="group p-4 bg-white hover:bg-slate-50 border border-slate-100 rounded-2xl cursor-pointer transition-all shadow-sm"
                 onClick={() => router.push(`/provider/${p.id}`)}
               >
                 <div className="flex items-center gap-4">
-                  <img src={p.photo} alt={p.name} className="w-12 h-12 rounded-xl object-cover" />
+                  <img src={p.photo} alt={p.name} className="w-16 h-16 rounded-xl object-cover border border-slate-100" />
                   <div className="flex-1">
-                    <h3 className="text-sm font-black text-white group-hover:text-primary transition-colors">{p.name}</h3>
-                    <p className="text-[10px] text-muted-foreground">{p.subject} • <span className="text-primary font-bold">{p.fees}</span></p>
+                    <h3 className="text-sm font-black text-slate-900 group-hover:text-primary transition-colors">{p.name}</h3>
+                    <p className="text-[10px] text-slate-500 mb-2">{p.subject} • <span className="text-primary font-bold">{p.fees}</span></p>
+                    <div className="flex gap-2">
+                      <button className="bg-primary/10 text-primary text-[9px] font-bold px-3 py-1.5 rounded-lg flex items-center gap-1">
+                        <Navigation size={10} /> Directions
+                      </button>
+                      <button className="bg-slate-100 text-slate-600 text-[9px] font-bold px-3 py-1.5 rounded-lg flex items-center gap-1">
+                        <Layers size={10} /> Details
+                      </button>
+                    </div>
                   </div>
-                  <div className="flex items-center text-yellow-400 text-xs font-bold">
+                  <div className="flex items-center text-yellow-500 text-xs font-bold self-start mt-1">
                     <Star size={10} fill="currentColor" className="mr-1" />
                     <span>{p.rating}</span>
                   </div>

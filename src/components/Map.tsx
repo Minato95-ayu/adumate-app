@@ -105,7 +105,7 @@ export default function Map({ providers, center = { lat: 28.6139, lng: 77.2090 }
       >
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-          url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
         <ChangeView center={followUser && userLocation ? { lat: userLocation[0], lng: userLocation[1] } : center} />
 
@@ -221,7 +221,7 @@ export default function Map({ providers, center = { lat: 28.6139, lng: 77.2090 }
         }
         .leaflet-popup-content { margin: 0 !important; width: auto !important; }
         .leaflet-popup-tip { background: #0f172a !important; }
-        .leaflet-container { background: #0a0f1a !important; }
+        .leaflet-container { background: #f8fafc !important; }
         
         .route-line-animated {
           stroke-dasharray: 10, 10;
@@ -243,11 +243,15 @@ export default function Map({ providers, center = { lat: 28.6139, lng: 77.2090 }
           filter: drop-shadow(0 0 10px rgba(59, 130, 246, 0.5));
         }
 
-        /* 3D Game Tilt Effect for the whole container */
-        .game-mode {
-          transform: perspective(1000px) rotateX(20deg);
-          transition: transform 0.5s ease;
+        /* Google Style Popup */
+        .custom-popup .leaflet-popup-content-wrapper {
+          background: white !important;
+          color: #1e293b !important;
+          border-radius: 1rem !important;
+          padding: 0 !important;
+          box-shadow: 0 10px 25px rgba(0,0,0,0.1) !important;
         }
+        .custom-popup .leaflet-popup-tip { background: white !important; }
       `}</style>
     </div>
   );
