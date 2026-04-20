@@ -1,5 +1,6 @@
 "use client";
 import { useState, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import { providers } from "@/data/providers";
 import { Search, MapPin, Filter, Layers, Navigation, Star, X, List, Map as MapIcon } from "lucide-react";
@@ -19,6 +20,7 @@ const Map = dynamic(() => import("@/components/Map"), {
 });
 
 export default function MapPage() {
+  const router = useRouter();
   const [search, setSearch] = useState("");
   const [selectedSubject, setSelectedSubject] = useState("All");
   const [minRating, setMinRating] = useState(0);
@@ -126,9 +128,11 @@ export default function MapPage() {
               <label className="text-xs font-black text-muted-foreground uppercase tracking-widest">{filteredProviders.length} Results</label>
             </div>
             {filteredProviders.map(p => (
-              <motion.div key={p.id} onClick={() => window.location.href = `/provider/${p.id}`}
+              <motion.div key={p.id}
                 whileHover={{ scale: 1.02 }}
-                className="group p-4 bg-white/5 hover:bg-white/10 border border-white/10 rounded-2xl cursor-pointer transition-all">
+                className="group p-4 bg-white/5 hover:bg-white/10 border border-white/10 rounded-2xl cursor-pointer transition-all"
+                onClick={() => router.push(`/provider/${p.id}`)}
+              >
                 <div className="flex items-center gap-4">
                   <img src={p.photo} alt={p.name} className="w-12 h-12 rounded-xl object-cover" />
                   <div className="flex-1">
@@ -232,7 +236,7 @@ export default function MapPage() {
               </div>
               <div className="p-4 space-y-3 max-h-[70vh] overflow-y-auto custom-scrollbar">
                 {filteredProviders.map(p => (
-                  <div key={p.id} onClick={() => window.location.href = `/provider/${p.id}`}
+                  <div key={p.id} onClick={() => router.push(`/provider/${p.id}`)}
                     className="p-4 bg-white/5 border border-white/10 rounded-3xl flex items-center gap-4">
                     <img src={p.photo} alt={p.name} className="w-14 h-14 rounded-2xl object-cover border border-white/10" />
                     <div className="flex-1">

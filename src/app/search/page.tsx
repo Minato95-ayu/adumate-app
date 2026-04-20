@@ -39,6 +39,8 @@ function getChannels(query: string) {
   return TELEGRAM_CHANNELS.default;
 }
 
+import { multiCallAI } from "@/lib/ai-service";
+
 function SearchResults() {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -77,25 +79,17 @@ function SearchResults() {
     setAiSummary("");
     setSummaryLoading(true);
 
-    const key = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
-    if (!key) { setSummaryLoading(false); return; }
-
     const prompt = `In 3 sentences, explain what "${query}" is in simple Hindi-English mixed language for a student. Be direct, educational, and friendly. No markdown.`;
 
-    const models = ["gemini-2.5-flash", "gemini-flash-latest", "gemini-2.0-flash-lite"];
     (async () => {
-      for (const model of models) {
-        try {
-          const resp = await fetch(
-            `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`,
-            { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) }
-          );
-          const data = await resp.json();
-          const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-          if (text) { setAiSummary(text); break; }
-        } catch { }
+      try {
+        const res = await multiCallAI(prompt);
+        if (res.text) setAiSummary(res.text);
+      } catch (err: any) {
+        console.error("Search Summary Error:", err);
+      } finally {
+        setSummaryLoading(false);
       }
-      setSummaryLoading(false);
     })();
   }, [query]);
 

@@ -9,7 +9,7 @@ import { useRouter } from "next/navigation";
 // A 3D rotating cube component - Visible on Mobile too now!
 const RotatingCube = () => {
   return (
-    <div className="perspective-1000 w-48 h-48 md:w-96 md:h-96 absolute right-0 top-1/4 -z-10 opacity-20 md:opacity-60 block">
+    <div className="perspective-1000 w-48 h-48 md:w-96 md:h-96 absolute right-[-20px] md:right-0 top-1/4 -z-10 opacity-20 md:opacity-60 block overflow-visible">
       <motion.div
         animate={{
           rotateX: [0, 360],
@@ -54,7 +54,7 @@ export default function HomePage() {
   const router = useRouter();
   const [kfQuery, setKfQuery] = useState("");
   return (
-    <div className="flex flex-col min-h-[calc(100vh-73px)] relative overflow-hidden bg-[#0a0f1a]">
+    <div className="flex flex-col min-h-[calc(100vh-73px)] relative overflow-x-hidden bg-[#0a0f1a]">
       {/* 3D Space Background Gradients */}
       <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] rounded-full bg-primary/20 blur-[150px] pointer-events-none" />
       <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-blue-600/20 blur-[150px] pointer-events-none" />

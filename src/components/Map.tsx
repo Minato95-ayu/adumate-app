@@ -15,7 +15,9 @@ const defaultIcon = L.icon({
   iconAnchor: [12, 41],
 });
 
-L.Marker.prototype.options.icon = defaultIcon;
+if (typeof window !== "undefined") {
+  L.Marker.prototype.options.icon = defaultIcon;
+}
 
 interface MapProps {
   providers: Provider[];
