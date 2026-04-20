@@ -1,4 +1,5 @@
 "use client";
+// Deployment Trigger: Syncing local fixes to Vercel
 import Link from "next/link";
 import { BookOpen, Home, Utensils, GraduationCap, Building, Search, Brain, Zap, Target, ChevronRight } from "lucide-react";
 import { motion, useMotionValue, useTransform, useSpring } from "framer-motion";
