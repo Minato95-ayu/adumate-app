@@ -20,7 +20,7 @@ export default function Navbar() {
     <nav className="border-b border-white/5 bg-background/50 backdrop-blur-xl sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 h-[64px] sm:h-[72px] flex items-center justify-between">
         <Link href="/" className="flex items-center gap-2 sm:gap-3 group">
-          <div className="relative w-8 h-8 sm:w-10 sm:h-10 overflow-hidden rounded-xl shadow-[0_0_15px_rgba(255,107,0,0.3)] group-hover:scale-110 transition-transform duration-300">
+          <div className="relative w-8 h-8 sm:w-10 sm:h-10 overflow-hidden rounded-xl shadow-[0_0_15px_rgba(255,107,0,0.3)] group-hover:scale-110 transition-transform duration-300 bg-primary/10 flex items-center justify-center">
             <Image 
               src="/logo-mark.svg" 
               alt="Adumate Logo" 
