@@ -4,7 +4,8 @@ import { MapContainer, TileLayer, Marker, Popup, useMap, CircleMarker, Polyline 
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { Provider } from "@/data/providers";
-import { Star, Video, Camera, MessageCircle, MapPin, Navigation, Clock, Ruler } from "lucide-react";
+import { Star, Video, Camera, MessageCircle, MapPin, Navigation, Clock, Ruler, Radar, Scan, Crosshair } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
 // Premium Dark Markers Fix
 const createCustomIcon = (color: string) => {
@@ -19,6 +20,7 @@ const createCustomIcon = (color: string) => {
 interface MapProps {
   providers: Provider[];
   center?: { lat: number; lng: number };
+  onScan?: () => void;
 }
 
 // Centering Helper
@@ -30,11 +32,14 @@ function ChangeView({ center }: { center: { lat: number; lng: number } }) {
   return null;
 }
 
-export default function Map({ providers, center = { lat: 28.6139, lng: 77.2090 } }: MapProps) {
+export default function Map({ providers, center = { lat: 28.6139, lng: 77.2090 }, onScan }: MapProps) {
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
   const [route, setRoute] = useState<[number, number][] | null>(null);
   const [routeInfo, setRouteInfo] = useState<{ distance: string, duration: string } | null>(null);
   const [loadingRoute, setLoadingRoute] = useState(false);
+  const [followUser, setFollowUser] = useState(false);
+  const [isScanning, setIsScanning] = useState(false);
+  const [heading, setHeading] = useState(0);
 
   useEffect(() => {
     // Fix Leaflet Default Icon path issues in Next.js
@@ -46,11 +51,20 @@ export default function Map({ providers, center = { lat: 28.6139, lng: 77.2090 }
     });
 
     if ("geolocation" in navigator) {
-      navigator.geolocation.getCurrentPosition((pos) => {
+      const watchId = navigator.geolocation.watchPosition((pos) => {
         setUserLocation([pos.coords.latitude, pos.coords.longitude]);
+        if (pos.coords.heading) setHeading(pos.coords.heading);
       });
+      return () => navigator.geolocation.clearWatch(watchId);
     }
   }, []);
+
+  const handleScan = async () => {
+    setIsScanning(true);
+    if (onScan) onScan();
+    // Simulate radar scan time
+    setTimeout(() => setIsScanning(false), 3000);
+  };
 
   const getRoute = async (endLat: number, endLng: number) => {
     if (!userLocation) {
@@ -93,18 +107,35 @@ export default function Map({ providers, center = { lat: 28.6139, lng: 77.2090 }
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
           url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
         />
-        <ChangeView center={center} />
+        <ChangeView center={followUser && userLocation ? { lat: userLocation[0], lng: userLocation[1] } : center} />
+
+        {/* Radar Pulse Effect */}
+        <AnimatePresence>
+          {isScanning && userLocation && (
+            <CircleMarker 
+              center={userLocation} 
+              radius={200} 
+              pathOptions={{ fillColor: "#FF6B00", color: "#FF6B00", fillOpacity: 0.1, weight: 1, className: "radar-pulse" }} 
+            />
+          )}
+        </AnimatePresence>
 
         {userLocation && (
-          <CircleMarker center={userLocation} radius={10} pathOptions={{ fillColor: "#3b82f6", color: "white", fillOpacity: 0.8, weight: 3 }}>
+          <CircleMarker center={userLocation} radius={12} pathOptions={{ fillColor: "#3b82f6", color: "white", fillOpacity: 0.9, weight: 3, className: "user-marker" }}>
             <Popup>Aap yahan hain</Popup>
           </CircleMarker>
         )}
 
-        {route && <Polyline positions={route} pathOptions={{ color: "#FF6B00", weight: 6, opacity: 0.9, lineJoin: 'round' }} />}
+        {route && (
+          <>
+            <Polyline positions={route} pathOptions={{ color: "rgba(255, 255, 255, 0.2)", weight: 8, lineJoin: 'round' }} />
+            <Polyline positions={route} pathOptions={{ color: "#FF6B00", weight: 6, lineJoin: 'round', className: "route-line-animated" }} />
+          </>
+        )}
 
         {providers.map((p) => (
           <Marker key={p.id} position={[p.lat, p.lng]} icon={createCustomIcon("#FF6B00")}>
+            {/* ... popup content same as before ... */}
             <Popup className="custom-popup" maxWidth={280}>
               <div className="w-full min-w-[240px] p-2 bg-[#0f172a] text-white rounded-xl overflow-hidden">
                 <div className="flex items-center gap-3 mb-3">
@@ -140,6 +171,24 @@ export default function Map({ providers, center = { lat: 28.6139, lng: 77.2090 }
         ))}
       </MapContainer>
 
+      {/* Zomato-style Overlays */}
+      <div className="absolute bottom-6 left-6 z-[1000] flex flex-col gap-3">
+        <motion.button 
+          whileTap={{ scale: 0.9 }}
+          onClick={() => setFollowUser(!followUser)}
+          className={`w-14 h-14 rounded-2xl flex items-center justify-center shadow-2xl transition-all border ${followUser ? "bg-blue-500 border-blue-400 text-white" : "bg-slate-900/90 border-white/10 text-slate-400"}`}
+        >
+          <Crosshair size={24} className={followUser ? "animate-pulse" : ""} />
+        </motion.button>
+        <motion.button 
+          whileTap={{ scale: 0.9 }}
+          onClick={handleScan}
+          className="w-14 h-14 bg-primary text-white rounded-2xl flex items-center justify-center shadow-2xl shadow-primary/30 border border-primary/50"
+        >
+          {isScanning ? <Radar size={24} className="animate-spin" /> : <Scan size={24} />}
+        </motion.button>
+      </div>
+
       {routeInfo && (
         <div className="absolute top-20 md:top-6 left-4 right-4 md:left-1/2 md:-translate-x-1/2 z-[1000] bg-slate-900/90 backdrop-blur-2xl border border-primary/30 rounded-[1.5rem] p-4 flex items-center justify-between md:justify-center md:gap-8 shadow-[0_20px_50px_rgba(0,0,0,0.6)]">
           <div className="flex items-center gap-3">
@@ -173,6 +222,32 @@ export default function Map({ providers, center = { lat: 28.6139, lng: 77.2090 }
         .leaflet-popup-content { margin: 0 !important; width: auto !important; }
         .leaflet-popup-tip { background: #0f172a !important; }
         .leaflet-container { background: #0a0f1a !important; }
+        
+        .route-line-animated {
+          stroke-dasharray: 10, 10;
+          animation: dash 20s linear infinite;
+        }
+        @keyframes dash {
+          to { stroke-dashoffset: -1000; }
+        }
+
+        .radar-pulse {
+          animation: pulse-radar 3s ease-out infinite;
+        }
+        @keyframes pulse-radar {
+          0% { r: 0; opacity: 0.5; }
+          100% { r: 200; opacity: 0; }
+        }
+
+        .user-marker {
+          filter: drop-shadow(0 0 10px rgba(59, 130, 246, 0.5));
+        }
+
+        /* 3D Game Tilt Effect for the whole container */
+        .game-mode {
+          transform: perspective(1000px) rotateX(20deg);
+          transition: transform 0.5s ease;
+        }
       `}</style>
     </div>
   );

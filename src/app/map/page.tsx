@@ -232,7 +232,11 @@ export default function MapPage() {
 
         {/* Map View (Full screen on mobile) */}
         <div className="flex-1 relative w-full h-full">
-          <Map providers={filteredProviders} center={userLoc} />
+          <Map 
+            providers={filteredProviders} 
+            center={userLoc} 
+            onScan={() => fetchRealPlaces(userLoc.lat, userLoc.lng, selectedCategory)}
+          />
           
           {/* Map UI Buttons */}
           <div className="absolute bottom-24 md:bottom-6 right-4 md:right-6 z-30 flex flex-col gap-3">
