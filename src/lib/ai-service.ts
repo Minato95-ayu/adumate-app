@@ -8,12 +8,12 @@ interface AIResponse {
   provider: string;
 }
 
-export async function multiCallAI(prompt: string, options: { json?: boolean } = {}): Promise<AIResponse> {
+export async function multiCallAI(prompt: string, options: { json?: boolean, image?: string } = {}): Promise<AIResponse> {
   try {
     const resp = await fetch("/api/ai", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ prompt, json: options.json })
+      body: JSON.stringify({ prompt, json: options.json, image: options.image })
     });
 
     const data = await resp.json();

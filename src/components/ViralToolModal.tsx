@@ -8,18 +8,40 @@ interface ViralToolModalProps {
   onClose: () => void;
 }
 
+import { multiCallAI } from "@/lib/ai-service";
+
 export default function ViralToolModal({ toolId, onClose }: ViralToolModalProps) {
   const [doubtImage, setDoubtImage] = useState<string | null>(null);
   const [isSolving, setIsSolving] = useState(false);
   const [solution, setSolution] = useState<string | null>(null);
 
-  const handleDoubtSolve = () => {
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setDoubtImage(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleDoubtSolve = async () => {
+    if (!doubtImage) {
+      alert("Pehle photo upload karein!");
+      return;
+    }
+    
     setIsSolving(true);
-    // Simulate AI solving
-    setTimeout(() => {
-      setSolution("This is a quadratic equation. Step 1: Find the discriminant (D = b² - 4ac). Step 2: Use the quadratic formula x = (-b ± √D) / 2a. Your answer is x = 5, -2.");
+    try {
+      const prompt = "You are a professional tutor. Solve the problem in this image step-by-step. Use simple language and explain the concepts clearly. If it's a question, give the answer. If it's a topic, explain it.";
+      const res = await multiCallAI(prompt, { image: doubtImage });
+      setSolution(res.text);
+    } catch (err: any) {
+      setSolution("⚠️ AI Connect nahi ho pa raha. Kripya dobara try karein ya internet check karein.");
+    } finally {
       setIsSolving(false);
-    }, 2000);
+    }
   };
 
   const [challengeTopic, setChallengeTopic] = useState("General Knowledge");
@@ -96,20 +118,36 @@ export default function ViralToolModal({ toolId, onClose }: ViralToolModalProps)
               <div className="space-y-6">
                 {!solution ? (
                   <>
-                    <div className="aspect-video rounded-3xl bg-white/5 border-2 border-dashed border-white/10 flex flex-col items-center justify-center text-center p-6 hover:border-primary/50 transition-colors cursor-pointer group">
-                      <Camera size={48} className="text-muted-foreground group-hover:text-primary transition-colors mb-4" />
-                      <p className="font-bold text-lg">Click to Upload or Take Photo</p>
-                      <p className="text-sm text-muted">Supports Maths, Physics, Chemistry & Coding</p>
-                    </div>
+                    <input 
+                      type="file" 
+                      accept="image/*" 
+                      id="doubt-upload" 
+                      className="hidden" 
+                      onChange={handleFileChange}
+                    />
+                    <label 
+                      htmlFor="doubt-upload"
+                      className="aspect-video rounded-3xl bg-white/5 border-2 border-dashed border-white/10 flex flex-col items-center justify-center text-center p-6 hover:border-primary/50 transition-colors cursor-pointer group overflow-hidden"
+                    >
+                      {doubtImage ? (
+                        <img src={doubtImage} alt="Doubt" className="w-full h-full object-contain" />
+                      ) : (
+                        <>
+                          <Camera size={48} className="text-muted-foreground group-hover:text-primary transition-colors mb-4" />
+                          <p className="font-bold text-lg text-white">Click to Upload or Take Photo</p>
+                          <p className="text-sm text-muted">Supports Maths, Physics, Chemistry & Coding</p>
+                        </>
+                      )}
+                    </label>
                     <button 
                       onClick={handleDoubtSolve}
-                      disabled={isSolving}
-                      className="w-full bg-primary hover:bg-primary-hover text-white font-bold py-4 rounded-2xl transition-all shadow-lg shadow-primary/20 flex justify-center items-center gap-2"
+                      disabled={isSolving || !doubtImage}
+                      className="w-full bg-primary hover:bg-primary-hover disabled:opacity-50 text-white font-bold py-4 rounded-2xl transition-all shadow-lg shadow-primary/20 flex justify-center items-center gap-2"
                     >
                       {isSolving ? (
-                        <><Brain className="animate-bounce" size={20} /> AI is thinking...</>
+                        <><Brain className="animate-bounce" size={20} /> AI is solving...</>
                       ) : (
-                        <><Send size={20} /> Solve with AI</>
+                        <><Send size={20} /> {doubtImage ? "Solve Now" : "Upload Image to Solve"}</>
                       )}
                     </button>
                   </>

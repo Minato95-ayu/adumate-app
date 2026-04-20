@@ -104,7 +104,7 @@ function SearchResults() {
     { id: "notes" as const, label: "Notes & PDFs", icon: <FileText size={14} /> },
   ];
 
-  const shareText = `🎯 "${query}" ka best study material Adumate pe mil gaya!\n🔗 adumate.app/search?q=${encodeURIComponent(query)}\n\nTum bhi try karo! 📚`;
+  const shareText = `🎯 "${query}" ka best study material Adumate pe mil gaya!\n🔗 https://adumate.app/search?q=${encodeURIComponent(query)}\n\nTum bhi try karo! 📚`;
   const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(shareText)}`;
 
   return (

@@ -61,7 +61,7 @@ const PROVIDERS = [
 
 export async function POST(req: Request) {
   try {
-    const { prompt, json } = await req.json();
+    const { prompt, json, image } = await req.json();
     let lastError = "";
 
     // Try each provider in order
@@ -72,25 +72,38 @@ export async function POST(req: Request) {
       for (const model of provider.models) {
         try {
           let responseText = "";
-          const timeout = 10000; // 10s timeout per attempt
+          const timeout = 15000; // 15s timeout for vision
 
           const controller = new AbortController();
           const timeoutId = setTimeout(() => controller.abort(), timeout);
 
           if (provider.type === "openai") {
+            const messages: any[] = [];
+            if (image) {
+              messages.push({
+                role: "user",
+                content: [
+                  { type: "text", text: prompt },
+                  { type: "image_url", image_url: { url: image } }
+                ]
+              });
+            } else {
+              messages.push({ role: "user", content: prompt });
+            }
+
             const resp = await fetch(provider.url, {
               method: "POST",
               headers: {
                 "Content-Type": "application/json",
                 "Authorization": `Bearer ${provider.key}`,
-                "HTTP-Referer": "https://adumate.app", // Required for OpenRouter
+                "HTTP-Referer": "https://adumate.app",
                 "X-Title": "Adumate"
               },
               signal: controller.signal,
               body: JSON.stringify({
                 model: model,
-                messages: [{ role: "user", content: prompt }],
-                temperature: 0.7,
+                messages: messages,
+                temperature: 0.5,
                 response_format: json ? { type: "json_object" } : undefined
               })
             });
@@ -101,17 +114,33 @@ export async function POST(req: Request) {
             responseText = data.choices?.[0]?.message?.content || "";
           } 
           else if (provider.type === "gemini") {
+            const body: any = {
+              contents: [{ 
+                parts: [{ text: prompt }] 
+              }],
+              generationConfig: {
+                temperature: 0.5,
+                responseMimeType: json ? "application/json" : "text/plain"
+              }
+            };
+
+            if (image) {
+              // image is expected to be a data URL like "data:image/png;base64,..."
+              const [mime, base64] = image.split(",");
+              const mimeType = mime.split(":")[1].split(";")[0];
+              body.contents[0].parts.push({
+                inline_data: {
+                  mime_type: mimeType,
+                  data: base64
+                }
+              });
+            }
+
             const resp = await fetch(`${provider.url}${model}:generateContent?key=${provider.key}`, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               signal: controller.signal,
-              body: JSON.stringify({
-                contents: [{ parts: [{ text: prompt }] }],
-                generationConfig: {
-                  temperature: 0.7,
-                  responseMimeType: json ? "application/json" : "text/plain"
-                }
-              })
+              body: JSON.stringify(body)
             });
             clearTimeout(timeoutId);
 
