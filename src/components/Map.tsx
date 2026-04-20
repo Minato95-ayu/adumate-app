@@ -76,57 +76,39 @@ export default function Map({ providers, center = [28.6139, 77.2090] }: MapProps
   };
 
   return (
-    <div className="h-full w-full rounded-3xl overflow-hidden border border-white/10 shadow-2xl relative">
-      <MapContainer 
-        center={center} 
-        zoom={13} 
-        scrollWheelZoom={true} 
-        className="h-full w-full z-10"
-      >
+    <div className="h-full w-full relative">
+      <MapContainer center={center} zoom={13} scrollWheelZoom={true} className="h-full w-full z-10">
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-          url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png" // Dark theme TileLayer
+          url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
         />
-        
         <ChangeView center={center} />
 
-        {/* User Location */}
         {userLocation && (
-          <CircleMarker 
-            center={userLocation} 
-            radius={8} 
-            pathOptions={{ fillColor: "#3b82f6", color: "white", fillOpacity: 1, weight: 2 }}
-          >
+          <CircleMarker center={userLocation} radius={10} pathOptions={{ fillColor: "#3b82f6", color: "white", fillOpacity: 0.8, weight: 3 }}>
             <Popup>Aap yahan hain</Popup>
           </CircleMarker>
         )}
 
-        {/* Route Line */}
-        {route && (
-          <Polyline 
-            positions={route} 
-            pathOptions={{ color: "#FF6B00", weight: 5, opacity: 0.8, lineJoin: 'round' }} 
-          />
-        )}
+        {route && <Polyline positions={route} pathOptions={{ color: "#FF6B00", weight: 6, opacity: 0.9, lineJoin: 'round' }} />}
 
-        {/* Provider Markers */}
         {providers.map((p) => (
           <Marker key={p.id} position={[p.lat, p.lng]}>
-            <Popup className="custom-popup">
-              <div className="w-64 p-2 bg-[#0f172a] text-white rounded-xl overflow-hidden">
+            <Popup className="custom-popup" maxWidth={280}>
+              <div className="w-full min-w-[240px] p-2 bg-[#0f172a] text-white rounded-xl overflow-hidden">
                 <div className="flex items-center gap-3 mb-3">
                   <img src={p.photo} alt={p.name} className="w-12 h-12 rounded-full border-2 border-primary object-cover" />
                   <div>
-                    <h3 className="font-bold text-sm m-0">{p.name}</h3>
-                    <p className="text-xs text-muted-foreground m-0">{p.subject}</p>
+                    <h3 className="font-bold text-sm m-0 leading-tight">{p.name}</h3>
+                    <p className="text-[10px] text-muted-foreground m-0">{p.subject}</p>
                     <div className="flex items-center text-yellow-400 mt-1">
-                      <Star size={12} fill="currentColor" />
+                      <Star size={10} fill="currentColor" />
                       <span className="text-[10px] ml-1 font-bold">{p.rating}</span>
                     </div>
                   </div>
                 </div>
 
-                <div className="flex justify-between items-center mb-4">
+                <div className="flex justify-between items-center mb-4 px-1">
                   <span className="text-xs font-black text-primary">{p.fees}</span>
                   <span className="text-[10px] text-muted-foreground flex items-center gap-1">
                     <MapPin size={10} /> {p.address?.split(',')[0]}
@@ -135,31 +117,23 @@ export default function Map({ providers, center = [28.6139, 77.2090] }: MapProps
 
                 <div className="grid grid-cols-2 gap-2 mb-3">
                   {p.social.youtube && (
-                    <a href={p.social.youtube} target="_blank" className="flex items-center justify-center gap-1 bg-red-600/20 hover:bg-red-600/40 text-red-500 py-1.5 rounded-lg text-[10px] font-bold transition-all border border-red-500/20">
+                    <a href={p.social.youtube} target="_blank" className="flex items-center justify-center gap-1 bg-red-600/10 hover:bg-red-600/30 text-red-500 py-2 rounded-xl text-[10px] font-bold transition-all border border-red-500/20">
                       <Video size={12} /> YouTube
                     </a>
                   )}
                   {p.social.instagram && (
-                    <a href={`https://instagram.com/${p.social.instagram}`} target="_blank" className="flex items-center justify-center gap-1 bg-pink-600/20 hover:bg-pink-600/40 text-pink-500 py-1.5 rounded-lg text-[10px] font-bold transition-all border border-pink-500/20">
+                    <a href={`https://instagram.com/${p.social.instagram}`} target="_blank" className="flex items-center justify-center gap-1 bg-pink-600/10 hover:bg-pink-600/30 text-pink-500 py-2 rounded-xl text-[10px] font-bold transition-all border border-pink-500/20">
                       <Camera size={12} /> Insta
                     </a>
                   )}
                 </div>
 
                 <div className="flex flex-col gap-2">
-                  <a 
-                    href={`https://wa.me/${p.social.whatsapp}`} 
-                    target="_blank"
-                    className="flex items-center justify-center gap-2 bg-green-500 hover:bg-green-600 text-white py-2 rounded-xl text-xs font-black transition-all shadow-lg shadow-green-500/20"
-                  >
+                  <a href={`https://wa.me/${p.social.whatsapp}`} target="_blank" className="flex items-center justify-center gap-2 bg-green-500 hover:bg-green-600 text-white py-2.5 rounded-xl text-xs font-black transition-all shadow-lg shadow-green-500/20">
                     <MessageCircle size={14} /> WhatsApp Connect
                   </a>
-                  <button 
-                    onClick={() => getRoute(p.lat, p.lng)}
-                    disabled={loadingRoute}
-                    className="flex items-center justify-center gap-2 bg-primary hover:bg-primary-hover text-white py-2 rounded-xl text-xs font-black transition-all shadow-lg shadow-primary/20 disabled:opacity-50"
-                  >
-                    {loadingRoute ? "Finding..." : <><Navigation size={14} /> Get Route</>}
+                  <button onClick={() => getRoute(p.lat, p.lng)} disabled={loadingRoute} className="flex items-center justify-center gap-2 bg-primary hover:bg-primary-hover text-white py-2.5 rounded-xl text-xs font-black transition-all shadow-lg shadow-primary/20 disabled:opacity-50">
+                    {loadingRoute ? "Calculating..." : <><Navigation size={14} /> Get Route</>}
                   </button>
                 </div>
               </div>
@@ -168,34 +142,27 @@ export default function Map({ providers, center = [28.6139, 77.2090] }: MapProps
         ))}
       </MapContainer>
 
-      {/* Route Info Overlay */}
       {routeInfo && (
-        <div className="absolute top-6 left-1/2 -translate-x-1/2 z-[1000] bg-slate-900/90 backdrop-blur-xl border border-primary/30 rounded-2xl p-4 flex items-center gap-6 shadow-2xl">
-          <div className="flex items-center gap-2">
-            <Ruler size={18} className="text-primary" />
+        <div className="absolute top-20 md:top-6 left-4 right-4 md:left-1/2 md:-translate-x-1/2 z-[1000] bg-slate-900/90 backdrop-blur-2xl border border-primary/30 rounded-[1.5rem] p-4 flex items-center justify-between md:justify-center md:gap-8 shadow-[0_20px_50px_rgba(0,0,0,0.6)]">
+          <div className="flex items-center gap-3">
+            <Ruler size={20} className="text-primary" />
             <div className="text-left">
-              <p className="text-[10px] text-muted-foreground font-bold uppercase">Distance</p>
+              <p className="text-[9px] text-muted-foreground font-black uppercase tracking-tighter">Distance</p>
               <p className="text-sm font-black text-white">{routeInfo.distance}</p>
             </div>
           </div>
-          <div className="w-px h-8 bg-white/10" />
-          <div className="flex items-center gap-2">
-            <Clock size={18} className="text-primary" />
+          <div className="hidden md:block w-px h-8 bg-white/10" />
+          <div className="flex items-center gap-3">
+            <Clock size={20} className="text-primary" />
             <div className="text-left">
-              <p className="text-[10px] text-muted-foreground font-bold uppercase">Duration</p>
+              <p className="text-[9px] text-muted-foreground font-black uppercase tracking-tighter">Time</p>
               <p className="text-sm font-black text-white">{routeInfo.duration}</p>
             </div>
           </div>
-          <button 
-            onClick={() => { setRoute(null); setRouteInfo(null); }}
-            className="ml-2 w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-all"
-          >
-            ✕
-          </button>
+          <button onClick={() => { setRoute(null); setRouteInfo(null); }} className="w-9 h-9 rounded-xl bg-white/5 hover:bg-red-500/20 flex items-center justify-center text-white transition-all border border-white/10">✕</button>
         </div>
       )}
 
-      {/* Custom Styles for Popup */}
       <style>{`
         .leaflet-popup-content-wrapper {
           background: #0f172a !important;
@@ -203,14 +170,10 @@ export default function Map({ providers, center = [28.6139, 77.2090] }: MapProps
           border: 1px solid rgba(255, 255, 255, 0.1) !important;
           border-radius: 1.5rem !important;
           padding: 0 !important;
+          box-shadow: 0 20px 50px rgba(0,0,0,0.5) !important;
         }
-        .leaflet-popup-content {
-          margin: 0 !important;
-          width: auto !important;
-        }
-        .leaflet-popup-tip {
-          background: #0f172a !important;
-        }
+        .leaflet-popup-content { margin: 0 !important; width: auto !important; }
+        .leaflet-popup-tip { background: #0f172a !important; }
       `}</style>
     </div>
   );
