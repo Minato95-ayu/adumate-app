@@ -3,7 +3,7 @@ import { useParams, useRouter } from "next/navigation";
 import { providers } from "@/data/providers";
 import { 
   Star, Video, Camera, Globe, MessageCircle, Send, 
-  MapPin, Clock, Award, CheckCircle, ChevronLeft, Share2, Heart 
+  MapPin, Clock, Award, CheckCircle, ChevronLeft, Share2, Heart, Navigation 
 } from "lucide-react";
 import { motion } from "framer-motion";
 import Link from "next/link";
