@@ -5,16 +5,11 @@ export default function robots(): MetadataRoute.Robots {
     rules: [
       {
         userAgent: "*",
-        allow: ["/", "/dashboard", "/test", "/search", "/login", "/partner"],
-        disallow: ["/admin", "/api/", "/_next/", "/profile/"],
-      },
-      {
-        userAgent: "Googlebot",
-        allow: "/",
-        disallow: ["/admin", "/api/"],
+        allow: ["/", "/dashboard", "/test", "/search", "/login", "/partner", "/map"],
+        disallow: ["/admin", "/api/", "/_next/", "/profile/", "/test/"],
       },
     ],
-    sitemap: "https://adumate.app/sitemap.xml",
-    host: "https://adumate.app",
+    sitemap: "https://www.adumate.in/sitemap.xml",
+    host: "https://www.adumate.in",
   };
 }

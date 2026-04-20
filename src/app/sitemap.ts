@@ -1,7 +1,7 @@
 import { MetadataRoute } from "next";
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const BASE_URL = "https://adumate.app";
+  const BASE_URL = "https://www.adumate.in";
   const now = new Date();
 
   return [
@@ -46,6 +46,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
       lastModified: now,
       changeFrequency: "monthly",
       priority: 0.7,
+    },
+    {
+      url: `${BASE_URL}/partner`,
+      lastModified: now,
+      changeFrequency: "daily",
+      priority: 0.8,
     },
   ];
 }
