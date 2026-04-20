@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { verifyAuth } from "@/lib/api-auth";
 
 const EDU_TOPICS = [
   "Newton's Laws of Motion","JEE Maths","JEE Physics","JEE Chemistry",
@@ -17,6 +18,11 @@ const EDU_TOPICS = [
 ];
 
 export async function GET(req: NextRequest) {
+  const auth = await verifyAuth(req);
+  if ("error" in auth) {
+    return NextResponse.json({ error: auth.error }, { status: auth.status });
+  }
+
   const q = new URL(req.url).searchParams.get("q")?.toLowerCase() || "";
   if (!q || q.length < 2) return NextResponse.json({ suggestions: [] });
 

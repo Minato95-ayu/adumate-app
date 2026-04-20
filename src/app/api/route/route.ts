@@ -1,6 +1,12 @@
 import { NextResponse } from "next/server";
+import { verifyAuth } from "@/lib/api-auth";
 
 export async function GET(req: Request) {
+  const auth = await verifyAuth(req);
+  if ("error" in auth) {
+    return NextResponse.json({ error: auth.error }, { status: auth.status });
+  }
+
   const { searchParams } = new URL(req.url);
   const start = searchParams.get("start");
   const end = searchParams.get("end");

@@ -4,12 +4,18 @@
  */
 
 import { AIResponse } from "@/types";
+import { auth } from "./firebase";
 
 export async function multiCallAI(prompt: string, options: { json?: boolean, image?: string } = {}): Promise<AIResponse> {
   try {
+    const token = await auth.currentUser?.getIdToken();
+    
     const resp = await fetch("/api/ai", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { 
+        "Content-Type": "application/json",
+        ...(token ? { "Authorization": `Bearer ${token}` } : {})
+      },
       body: JSON.stringify({ prompt, json: options.json, image: options.image })
     });
 

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { adminAuth } from "@/lib/firebase-admin";
 
 const PROVIDERS = [
   {
@@ -61,7 +62,34 @@ const PROVIDERS = [
 
 export async function POST(req: Request) {
   try {
+    // 1. Authentication Check
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return NextResponse.json({ error: "Unauthorized: Missing token" }, { status: 401 });
+    }
+
+    const idToken = authHeader.split("Bearer ")[1];
+    let decodedToken;
+    try {
+      decodedToken = await adminAuth.verifyIdToken(idToken);
+    } catch (error) {
+      console.error("Token verification failed:", error);
+      return NextResponse.json({ error: "Unauthorized: Invalid token" }, { status: 401 });
+    }
+
     const { prompt, json, image } = await req.json();
+
+    // 2. Input Validation & Abuse Prevention
+    if (!prompt || typeof prompt !== "string") {
+      return NextResponse.json({ error: "Invalid prompt" }, { status: 400 });
+    }
+
+    if (prompt.length > 4000) {
+      return NextResponse.json({ error: "Prompt too long (max 4000 chars)" }, { status: 400 });
+    }
+
+    console.log(`[AI_API] User ${decodedToken.uid} requested AI response. Prompt length: ${prompt.length}`);
+
     let lastError = "";
 
     // Try each provider in order

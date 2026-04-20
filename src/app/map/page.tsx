@@ -5,6 +5,7 @@ import dynamic from "next/dynamic";
 import { providers } from "@/data/providers";
 import { Search, MapPin, Filter, Layers, Navigation, Star, X, List, Map as MapIcon } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { auth } from "@/lib/firebase";
 
 // Dynamically import Map to prevent SSR errors
 const Map = dynamic(() => import("@/components/Map"), { 
@@ -33,7 +34,12 @@ export default function MapPage() {
   const fetchRealPlaces = async (lat: number, lon: number, cat: string) => {
     setLoading(true);
     try {
-      const resp = await fetch(`/api/places?lat=${lat}&lon=${lon}&category=${cat}&radius=5000`);
+      const token = await auth.currentUser?.getIdToken();
+      const resp = await fetch(`/api/places?lat=${lat}&lon=${lon}&category=${cat}&radius=5000`, {
+        headers: {
+          ...(token ? { "Authorization": `Bearer ${token}` } : {})
+        }
+      });
       const data = await resp.json();
       if (data.places) {
         // Transform API data to match Map component's Provider type
@@ -97,7 +103,12 @@ export default function MapPage() {
               if (e.key === "Enter" && search.length > 2) {
                 setLoading(true);
                 try {
-                  const res = await fetch(`/api/geocode?city=${encodeURIComponent(search)}`);
+                  const token = await auth.currentUser?.getIdToken();
+                  const res = await fetch(`/api/geocode?city=${encodeURIComponent(search)}`, {
+                    headers: {
+                      ...(token ? { "Authorization": `Bearer ${token}` } : {})
+                    }
+                  });
                   const data = await res.json();
                   if (data.lat && data.lon) {
                     const newLoc = { lat: data.lat, lng: data.lon };
@@ -144,7 +155,12 @@ export default function MapPage() {
                 if (e.key === "Enter" && search.length > 2) {
                   setLoading(true);
                   try {
-                    const res = await fetch(`/api/geocode?city=${encodeURIComponent(search)}`);
+                    const token = await auth.currentUser?.getIdToken();
+                    const res = await fetch(`/api/geocode?city=${encodeURIComponent(search)}`, {
+                      headers: {
+                        ...(token ? { "Authorization": `Bearer ${token}` } : {})
+                      }
+                    });
                     const data = await res.json();
                     if (data.lat && data.lon) {
                       const newLoc = { lat: data.lat, lng: data.lon };

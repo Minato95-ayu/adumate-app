@@ -4,6 +4,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Search, PlayCircle, MessageCircle, FileText, BookOpen, Zap, Share2, ChevronRight, ExternalLink, Globe, Loader2 } from "lucide-react";
 import Link from "next/link";
+import { auth } from "@/lib/firebase";
 
 const TELEGRAM_CHANNELS: Record<string, { name: string; handle: string; desc: string }[]> = {
   default: [
@@ -59,7 +60,12 @@ function SearchResults() {
     if (newQuery.length < 2) { setSuggestions([]); return; }
     const t = setTimeout(async () => {
       try {
-        const r = await fetch(`/api/suggestions?q=${encodeURIComponent(newQuery)}`);
+        const token = await auth.currentUser?.getIdToken();
+        const r = await fetch(`/api/suggestions?q=${encodeURIComponent(newQuery)}`, {
+          headers: {
+            ...(token ? { "Authorization": `Bearer ${token}` } : {})
+          }
+        });
         const d = await r.json();
         setSuggestions(d.suggestions || []);
         setShowSugg(true);

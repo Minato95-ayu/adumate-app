@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { verifyAuth } from "@/lib/api-auth";
 
 const GOOGLE_KEY = process.env.GOOGLE_MAPS_API_KEY || process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
 
@@ -67,6 +68,11 @@ async function geocodeOsm(city: string) {
 }
 
 export async function GET(req: NextRequest) {
+  const auth = await verifyAuth(req);
+  if ("error" in auth) {
+    return NextResponse.json({ error: auth.error }, { status: auth.status });
+  }
+
   const city = new URL(req.url).searchParams.get("city");
   if (!city) return NextResponse.json({ error: "city required" }, { status: 400 });
 
