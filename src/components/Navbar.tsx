@@ -33,6 +33,12 @@ export default function Navbar() {
           </span>
         </Link>
 
+        <div className="hidden lg:flex items-center gap-8 ml-10">
+          <Link href="/services" className="text-sm font-bold text-slate-300 hover:text-primary transition-colors">Services</Link>
+          <Link href="/map" className="text-sm font-bold text-slate-300 hover:text-primary transition-colors">Finder Map</Link>
+          <Link href="/blog" className="text-sm font-bold text-slate-300 hover:text-primary transition-colors">Blog</Link>
+        </div>
+
         <div className="flex items-center gap-2 md:gap-6">
           {user ? (
             <>
