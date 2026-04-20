@@ -42,6 +42,20 @@ const PROVIDERS = [
     url: "https://api.mistral.ai/v1/chat/completions",
     models: ["mistral-small-latest", "open-mixtral-8x7b"],
     type: "openai"
+  },
+  {
+    name: "HuggingFace",
+    key: process.env.NEXT_PUBLIC_HUGGINGFACE_API_KEY,
+    url: "https://api-inference.huggingface.co/models/",
+    models: ["mistralai/Mistral-7B-Instruct-v0.3", "meta-llama/Llama-3-8B-Instruct"],
+    type: "hf"
+  },
+  {
+    name: "Cloudflare",
+    key: process.env.NEXT_PUBLIC_CF_API_KEY,
+    url: `https://api.cloudflare.com/client/v4/accounts/${process.env.NEXT_PUBLIC_CF_ACCOUNT_ID}/ai/run/`,
+    models: ["@cf/meta/llama-3-8b-instruct", "@cf/mistral/mistral-7b-instruct-v0.2"],
+    type: "cf"
   }
 ];
 
@@ -104,6 +118,38 @@ export async function POST(req: Request) {
             const data = await resp.json();
             if (data.error) throw new Error(data.error.message || "Gemini Error");
             responseText = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+          }
+          else if (provider.type === "hf") {
+            const resp = await fetch(`${provider.url}${model}`, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${provider.key}`
+              },
+              signal: controller.signal,
+              body: JSON.stringify({ inputs: prompt })
+            });
+            clearTimeout(timeoutId);
+            const data = await resp.json();
+            responseText = data[0]?.generated_text || data.generated_text || "";
+            // Clean up instruction tokens if present
+            responseText = responseText.replace(/\[INST\][\s\S]*?\[\/INST\]/g, "").trim();
+          }
+          else if (provider.type === "cf") {
+            const resp = await fetch(`${provider.url}${model}`, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${provider.key}`
+              },
+              signal: controller.signal,
+              body: JSON.stringify({
+                messages: [{ role: "user", content: prompt }]
+              })
+            });
+            clearTimeout(timeoutId);
+            const data = await resp.json();
+            if (data.result) responseText = data.result.response || "";
           }
 
           if (responseText && responseText.trim()) {

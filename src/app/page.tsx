@@ -1,10 +1,12 @@
 "use client";
 import Link from "next/link";
-import { BookOpen, Home, Utensils, GraduationCap, Building, Search, Brain, Zap, Target } from "lucide-react";
+import { BookOpen, Home, Utensils, GraduationCap, Building, Search, Brain, Zap, Target, ChevronRight } from "lucide-react";
 import { motion, useMotionValue, useTransform, useSpring } from "framer-motion";
 import Image from "next/image";
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { onAuthStateChanged } from "firebase/auth";
+import { auth } from "@/lib/firebase";
 
 // A 3D rotating cube component - Visible on Mobile too now!
 const RotatingCube = () => {
@@ -53,6 +55,14 @@ const RotatingCube = () => {
 export default function HomePage() {
   const router = useRouter();
   const [kfQuery, setKfQuery] = useState("");
+  const [user, setUser] = useState<any>(null);
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (u) => {
+      setUser(u);
+    });
+    return () => unsubscribe();
+  }, []);
   return (
     <div className="flex flex-col min-h-[calc(100vh-73px)] relative overflow-x-hidden bg-[#0a0f1a]">
       {/* 3D Space Background Gradients */}
@@ -116,25 +126,35 @@ export default function HomePage() {
           </p>
 
           <div className="flex flex-col sm:flex-row gap-6 w-full sm:w-auto perspective-1000">
-            <Link 
-              href="/login?role=student" 
-              className="btn-3d group relative w-full sm:w-auto flex items-center justify-center gap-3 bg-gradient-to-b from-[#FF8533] to-[#CC5500] hover:from-[#FF9955] hover:to-[#E66000] text-white px-10 py-5 rounded-2xl font-black text-xl shadow-[0_10px_0_#994000,0_15px_20px_rgba(255,107,0,0.4)] hover:shadow-[0_8px_0_#994000,0_15px_20px_rgba(255,107,0,0.6)]"
-            >
-              <div className="absolute inset-0 rounded-2xl bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-              <span>I'm a Student</span>
-              <motion.div 
-                animate={{ rotate: 360 }} 
-                transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
+            {user ? (
+              <Link 
+                href="/dashboard" 
+                className="btn-3d group relative w-full sm:w-auto flex items-center justify-center gap-3 bg-gradient-to-b from-[#FF8533] to-[#CC5500] hover:from-[#FF9955] hover:to-[#E66000] text-white px-10 py-5 rounded-2xl font-black text-xl shadow-[0_10px_0_#994000,0_15px_20px_rgba(255,107,0,0.4)] hover:shadow-[0_8px_0_#994000,0_15px_20px_rgba(255,107,0,0.6)]"
               >
-                <BookOpen size={24} className="drop-shadow-lg" />
-              </motion.div>
-            </Link>
+                <span>Go to Dashboard</span>
+                <ChevronRight size={24} />
+              </Link>
+            ) : (
+              <Link 
+                href="/login?role=student" 
+                className="btn-3d group relative w-full sm:w-auto flex items-center justify-center gap-3 bg-gradient-to-b from-[#FF8533] to-[#CC5500] hover:from-[#FF9955] hover:to-[#E66000] text-white px-10 py-5 rounded-2xl font-black text-xl shadow-[0_10px_0_#994000,0_15px_20px_rgba(255,107,0,0.4)] hover:shadow-[0_8px_0_#994000,0_15px_20px_rgba(255,107,0,0.6)]"
+              >
+                <div className="absolute inset-0 rounded-2xl bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                <span>I'm a Student</span>
+                <motion.div 
+                  animate={{ rotate: 360 }} 
+                  transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
+                >
+                  <BookOpen size={24} className="drop-shadow-lg" />
+                </motion.div>
+              </Link>
+            )}
 
             <Link 
-              href="/login?role=partner" 
+              href={user ? "/partner" : "/login?role=partner"} 
               className="btn-3d group relative w-full sm:w-auto flex items-center justify-center gap-3 bg-gradient-to-b from-slate-700 to-slate-900 border-2 border-slate-600 hover:border-primary/50 text-white px-8 py-4 md:px-10 md:py-5 rounded-2xl font-black text-lg md:text-xl shadow-[0_10px_0_#0f172a,0_15px_20px_rgba(0,0,0,0.5)]"
             >
-              <span>Partner With Us</span>
+              <span>{user ? "Partner Area" : "Partner With Us"}</span>
               <Building size={20} className="text-primary group-hover:animate-bounce drop-shadow-lg" />
             </Link>
           </div>

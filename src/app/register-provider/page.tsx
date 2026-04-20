@@ -6,7 +6,10 @@ import {
   Globe, MessageCircle, Send, CheckCircle, Loader2 
 } from "lucide-react";
 
+import { useRouter } from "next/navigation";
+
 export default function RegisterProvider() {
+  const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
 
@@ -34,7 +37,7 @@ export default function RegisterProvider() {
           <h2 className="text-3xl font-black text-white mb-4">Registration Successful!</h2>
           <p className="text-slate-400 mb-8">Aapki profile review ke liye bhej di gayi hai. Hum jald hi aapko Adumate Map par live kar denge.</p>
           <button 
-            onClick={() => window.location.href = "/map"}
+            onClick={() => router.push("/map")}
             className="w-full bg-primary py-4 rounded-2xl font-black text-white shadow-xl shadow-primary/20"
           >
             Go to Map 🚀
