@@ -6,10 +6,10 @@ import Image from "next/image";
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
-// A 3D rotating cube component
+// A 3D rotating cube component - Visible on Mobile too now!
 const RotatingCube = () => {
   return (
-    <div className="perspective-1000 w-64 h-64 md:w-96 md:h-96 absolute right-0 top-1/4 -z-10 opacity-30 md:opacity-60 hidden sm:block">
+    <div className="perspective-1000 w-48 h-48 md:w-96 md:h-96 absolute right-0 top-1/4 -z-10 opacity-20 md:opacity-60 block">
       <motion.div
         animate={{
           rotateX: [0, 360],
@@ -22,29 +22,28 @@ const RotatingCube = () => {
         }}
         className="w-full h-full relative preserve-3d"
       >
-        {/* Front */}
-        <div className="absolute w-full h-full border-2 border-primary/50 bg-primary/10 rounded-2xl flex items-center justify-center transform translate-z-32 md:translate-z-48 backdrop-blur-sm">
-          <BookOpen size={60} className="text-primary" />
+        <div className="absolute w-full h-full border-2 border-primary/50 bg-primary/10 rounded-2xl flex items-center justify-center transform translate-z-24 md:translate-z-48 backdrop-blur-sm">
+          <BookOpen size={40} className="text-primary md:hidden" />
+          <BookOpen size={60} className="text-primary hidden md:block" />
         </div>
-        {/* Back */}
-        <div className="absolute w-full h-full border-2 border-blue-500/50 bg-blue-500/10 rounded-2xl flex items-center justify-center transform -translate-z-32 md:-translate-z-48 rotate-y-180 backdrop-blur-sm">
-          <Home size={60} className="text-blue-500" />
+        <div className="absolute w-full h-full border-2 border-blue-500/50 bg-blue-500/10 rounded-2xl flex items-center justify-center transform -translate-z-24 md:-translate-z-48 rotate-y-180 backdrop-blur-sm">
+          <Home size={40} className="text-blue-500 md:hidden" />
+          <Home size={60} className="text-blue-500 hidden md:block" />
         </div>
-        {/* Left */}
-        <div className="absolute w-full h-full border-2 border-green-500/50 bg-green-500/10 rounded-2xl flex items-center justify-center transform -translate-x-32 md:-translate-x-48 -rotate-y-90 backdrop-blur-sm">
-          <Utensils size={60} className="text-green-500" />
+        <div className="absolute w-full h-full border-2 border-green-500/50 bg-green-500/10 rounded-2xl flex items-center justify-center transform -translate-x-24 md:-translate-x-48 -rotate-y-90 backdrop-blur-sm">
+          <Utensils size={40} className="text-green-500 md:hidden" />
+          <Utensils size={60} className="text-green-500 hidden md:block" />
         </div>
-        {/* Right */}
-        <div className="absolute w-full h-full border-2 border-purple-500/50 bg-purple-500/10 rounded-2xl flex items-center justify-center transform translate-x-32 md:translate-x-48 rotate-y-90 backdrop-blur-sm">
-          <GraduationCap size={60} className="text-purple-500" />
+        <div className="absolute w-full h-full border-2 border-purple-500/50 bg-purple-500/10 rounded-2xl flex items-center justify-center transform translate-x-24 md:translate-x-48 rotate-y-90 backdrop-blur-sm">
+          <GraduationCap size={40} className="text-purple-500 md:hidden" />
+          <GraduationCap size={60} className="text-purple-500 hidden md:block" />
         </div>
-        {/* Top */}
-        <div className="absolute w-full h-full border-2 border-orange-400/50 bg-orange-400/10 rounded-2xl flex items-center justify-center transform -translate-y-32 md:-translate-y-48 rotate-x-90 backdrop-blur-sm">
-          <Building size={60} className="text-orange-400" />
+        <div className="absolute w-full h-full border-2 border-orange-400/50 bg-orange-400/10 rounded-2xl flex items-center justify-center transform -translate-y-24 md:-translate-y-48 rotate-x-90 backdrop-blur-sm">
+          <Building size={40} className="text-orange-400 md:hidden" />
+          <Building size={60} className="text-orange-400 hidden md:block" />
         </div>
-        {/* Bottom */}
-        <div className="absolute w-full h-full border-2 border-pink-500/50 bg-pink-500/10 rounded-2xl flex items-center justify-center transform translate-y-32 md:translate-y-48 -rotate-x-90 backdrop-blur-sm">
-          <span className="text-3xl font-bold text-pink-500">Adumate</span>
+        <div className="absolute w-full h-full border-2 border-pink-500/50 bg-pink-500/10 rounded-2xl flex items-center justify-center transform translate-y-24 md:translate-y-48 -rotate-x-90 backdrop-blur-sm">
+          <span className="text-xl md:text-3xl font-bold text-pink-500">Adumate</span>
         </div>
       </motion.div>
     </div>
@@ -64,19 +63,19 @@ export default function HomePage() {
       <style dangerouslySetInnerHTML={{__html: `
         .perspective-1000 { perspective: 1000px; }
         .preserve-3d { transform-style: preserve-3d; }
-        .translate-z-32 { transform: translateZ(8rem); }
+        .translate-z-24 { transform: translateZ(6rem); }
         .translate-z-48 { transform: translateZ(12rem); }
-        .-translate-z-32 { transform: translateZ(-8rem); }
+        .-translate-z-24 { transform: translateZ(-6rem); }
         .-translate-z-48 { transform: translateZ(-12rem); }
-        .-rotate-y-90 { transform: rotateY(-90deg) translateZ(8rem); }
+        .-rotate-y-90 { transform: rotateY(-90deg) translateZ(6rem); }
         @media (min-width: 768px) { .-rotate-y-90 { transform: rotateY(-90deg) translateZ(12rem); } }
-        .rotate-y-90 { transform: rotateY(90deg) translateZ(8rem); }
+        .rotate-y-90 { transform: rotateY(90deg) translateZ(6rem); }
         @media (min-width: 768px) { .rotate-y-90 { transform: rotateY(90deg) translateZ(12rem); } }
-        .rotate-x-90 { transform: rotateX(90deg) translateZ(8rem); }
+        .rotate-x-90 { transform: rotateX(90deg) translateZ(6rem); }
         @media (min-width: 768px) { .rotate-x-90 { transform: rotateX(90deg) translateZ(12rem); } }
-        .-rotate-x-90 { transform: rotateX(-90deg) translateZ(8rem); }
+        .-rotate-x-90 { transform: rotateX(-90deg) translateZ(6rem); }
         @media (min-width: 768px) { .-rotate-x-90 { transform: rotateX(-90deg) translateZ(12rem); } }
-        .rotate-y-180 { transform: rotateY(180deg) translateZ(8rem); }
+        .rotate-y-180 { transform: rotateY(180deg) translateZ(6rem); }
         @media (min-width: 768px) { .rotate-y-180 { transform: rotateY(180deg) translateZ(12rem); } }
         
         .btn-3d {
@@ -220,7 +219,7 @@ export default function HomePage() {
             ))}
           </div>
 
-          {/* 3D Feature Cards */}
+          {/* Feature Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 perspective-1000">
             {[
               {
@@ -273,10 +272,7 @@ export default function HomePage() {
                 onClick={card.action}
                 className={`relative bg-gradient-to-br ${card.gradient} border ${card.border} rounded-[2rem] p-6 md:p-8 cursor-pointer group overflow-hidden shadow-2xl ${card.glow} transform-style-preserve-3d transition-all`}
               >
-                {/* Animated background glow */}
                 <div className={`absolute inset-0 bg-gradient-to-br ${card.gradient} opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-xl`} />
-
-                {/* Floating icon */}
                 <motion.div
                   animate={{ y: [0, -8, 0] }}
                   transition={{ duration: 3, repeat: Infinity, ease: "easeInOut", delay: i * 0.5 }}
@@ -284,22 +280,14 @@ export default function HomePage() {
                 >
                   {card.icon}
                 </motion.div>
-
                 <span className={`inline-flex items-center px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border mb-4 ${card.badgeColor}`}>
                   {card.badge}
                 </span>
-
                 <h3 className="text-2xl font-black text-white mb-3 relative z-10">{card.title}</h3>
                 <p className="text-slate-300 text-sm leading-relaxed mb-6 relative z-10">{card.desc}</p>
-
                 <button className={`${card.ctaColor} text-white font-black px-5 py-3 rounded-2xl text-sm transition-all shadow-lg relative z-10 group-hover:scale-105`}>
                   {card.cta}
                 </button>
-
-                {/* Corner decoration */}
-                <div className="absolute -right-6 -bottom-6 text-8xl opacity-5 group-hover:opacity-10 transition-opacity">
-                  {card.icon}
-                </div>
               </motion.div>
             ))}
           </div>
