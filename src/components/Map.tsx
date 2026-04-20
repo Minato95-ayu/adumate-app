@@ -31,7 +31,7 @@ interface MapProps {
 export default function Map({ providers, center = { lat: 28.6139, lng: 77.2090 } }: MapProps) {
   const { isLoaded } = useJsApiLoader({
     id: 'google-map-script',
-    googleMapsApiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || ""
+    googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || process.env.NEXT_PUBLIC_FIREBASE_API_KEY || ""
   });
 
   const [map, setMap] = useState<google.maps.Map | null>(null);
