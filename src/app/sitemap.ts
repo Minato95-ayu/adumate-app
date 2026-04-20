@@ -36,9 +36,15 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.6,
     },
     {
-      url: `${BASE_URL}/partner`,
+      url: `${BASE_URL}/map`,
       lastModified: now,
-      changeFrequency: "weekly",
+      changeFrequency: "daily",
+      priority: 0.9,
+    },
+    {
+      url: `${BASE_URL}/register-provider`,
+      lastModified: now,
+      changeFrequency: "monthly",
       priority: 0.7,
     },
   ];
