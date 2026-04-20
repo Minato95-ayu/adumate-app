@@ -39,6 +39,7 @@ export default function ProtectedRoute({
         }
       } catch (error) {
         console.error("Error fetching user role", error);
+        setLoading(false);
         router.push("/login");
       }
     });

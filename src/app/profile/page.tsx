@@ -36,6 +36,9 @@ export default function ProfilePage() {
           setAddress(data.address || "");
         }
         setLoading(false);
+      } else {
+        // If no user, ProtectedRoute will handle redirect, but we stop loading here
+        setLoading(false);
       }
     });
     return () => unsubscribe();
