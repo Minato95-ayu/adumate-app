@@ -90,9 +90,28 @@ export default function MapPage() {
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
           <input 
             type="text" 
-            placeholder="Search tutors..." 
+            placeholder="Search area (e.g. Delhi)..." 
             value={search}
             onChange={(e) => setSearch(e.target.value)}
+            onKeyDown={async (e) => {
+              if (e.key === "Enter" && search.length > 2) {
+                setLoading(true);
+                try {
+                  const res = await fetch(`/api/geocode?city=${encodeURIComponent(search)}`);
+                  const data = await res.json();
+                  if (data.lat && data.lon) {
+                    const newLoc = { lat: data.lat, lng: data.lon };
+                    setUserLoc(newLoc);
+                    fetchRealPlaces(newLoc.lat, newLoc.lng, selectedCategory);
+                    setSearch("");
+                  }
+                } catch (err) {
+                  console.error("Search Error:", err);
+                } finally {
+                  setLoading(false);
+                }
+              }
+            }}
             className="w-full bg-slate-900/90 backdrop-blur-xl border border-white/10 rounded-2xl py-3.5 pl-12 pr-4 text-sm text-white shadow-2xl focus:ring-2 focus:ring-primary outline-none"
           />
         </div>
@@ -118,11 +137,31 @@ export default function MapPage() {
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
             <input 
               type="text" 
-              placeholder="Search by name or subject..." 
+              placeholder="Search by name or 'City, Area'..." 
               value={search}
               onChange={(e) => setSearch(e.target.value)}
+              onKeyDown={async (e) => {
+                if (e.key === "Enter" && search.length > 2) {
+                  setLoading(true);
+                  try {
+                    const res = await fetch(`/api/geocode?city=${encodeURIComponent(search)}`);
+                    const data = await res.json();
+                    if (data.lat && data.lon) {
+                      const newLoc = { lat: data.lat, lng: data.lon };
+                      setUserLoc(newLoc);
+                      fetchRealPlaces(newLoc.lat, newLoc.lng, selectedCategory);
+                      setSearch(""); // Clear search to show all results in new area
+                    }
+                  } catch (err) {
+                    console.error("Search Error:", err);
+                  } finally {
+                    setLoading(false);
+                  }
+                }
+              }}
               className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 pl-12 pr-4 text-sm text-white focus:ring-2 focus:ring-primary outline-none transition-all"
             />
+            <p className="text-[9px] text-muted-foreground mt-2 px-1">Press Enter to search for a new area</p>
           </div>
 
           <div className="space-y-6 mb-8">
