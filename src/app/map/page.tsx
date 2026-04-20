@@ -26,6 +26,8 @@ export default function MapPage() {
   const [places, setPlaces] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [userLoc, setUserLoc] = useState({ lat: 28.6139, lng: 77.2090 });
+  const [showFilters, setShowFilters] = useState(false);
+  const [showMobileList, setShowMobileList] = useState(false);
 
   // Fetch real-world data from Google Places / OSM proxy
   const fetchRealPlaces = async (lat: number, lon: number, cat: string) => {
@@ -211,23 +213,12 @@ export default function MapPage() {
               </div>
               <div className="space-y-8 max-h-[60vh] overflow-y-auto pr-2">
                 <div>
-                  <label className="text-xs font-black text-muted-foreground uppercase tracking-widest mb-4 block">Subjects</label>
+                  <label className="text-xs font-black text-muted-foreground uppercase tracking-widest mb-4 block">Categories</label>
                   <div className="flex flex-wrap gap-2">
-                    {subjects.map(s => (
-                      <button key={s} onClick={() => setSelectedSubject(s)}
-                        className={`px-4 py-2.5 rounded-2xl text-xs font-bold transition-all border ${selectedSubject === s ? "bg-primary text-white border-primary" : "bg-white/5 text-muted-foreground border-white/10"}`}>
-                        {s}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                <div>
-                  <label className="text-xs font-black text-muted-foreground uppercase tracking-widest mb-4 block">Min Rating</label>
-                  <div className="flex gap-2">
-                    {[0, 3, 4, 4.5].map(r => (
-                      <button key={r} onClick={() => setMinRating(r)}
-                        className={`flex-1 py-3 rounded-2xl text-xs font-bold border transition-all ${minRating === r ? "bg-yellow-500/20 text-yellow-500 border-yellow-500/50" : "bg-white/5 text-muted-foreground border-white/10"}`}>
-                        {r === 0 ? "All" : `${r}+ ⭐`}
+                    {categories.map(c => (
+                      <button key={c.id} onClick={() => { setSelectedCategory(c.id); setShowFilters(false); }}
+                        className={`px-4 py-2.5 rounded-2xl text-xs font-bold transition-all border ${selectedCategory === c.id ? "bg-primary text-white border-primary" : "bg-white/5 text-muted-foreground border-white/10"}`}>
+                        {c.icon} {c.label}
                       </button>
                     ))}
                   </div>
