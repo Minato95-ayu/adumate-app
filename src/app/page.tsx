@@ -1,3 +1,4 @@
+// Deployment Trigger: Build Fix for Footer
 "use client";
 // Deployment Trigger: Syncing local fixes to Vercel
 import Link from "next/link";
