@@ -22,37 +22,62 @@ const Map = dynamic(() => import("@/components/Map"), {
 export default function MapPage() {
   const router = useRouter();
   const [search, setSearch] = useState("");
-  const [selectedSubject, setSelectedSubject] = useState("All");
-  const [minRating, setMinRating] = useState(0);
-  const [maxFees, setMaxFees] = useState(2000);
-  const [sortBy, setSortBy] = useState("rating");
-  const [showMobileList, setShowMobileList] = useState(false);
-  const [showFilters, setShowFilters] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState("library");
+  const [places, setPlaces] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [userLoc, setUserLoc] = useState({ lat: 28.6139, lng: 77.2090 });
+
+  // Fetch real-world data from Google Places / OSM proxy
+  const fetchRealPlaces = async (lat: number, lon: number, cat: string) => {
+    setLoading(true);
+    try {
+      const resp = await fetch(`/api/places?lat=${lat}&lon=${lon}&category=${cat}&radius=5000`);
+      const data = await resp.json();
+      if (data.places) {
+        // Transform API data to match Map component's Provider type
+        const transformed = data.places.map((p: any) => ({
+          id: p.id,
+          name: p.name,
+          subject: cat.toUpperCase(),
+          fees: p.rating ? `⭐ ${p.rating}` : "Premium Service",
+          rating: p.rating || 4.0,
+          lat: p.lat,
+          lng: p.lon,
+          photo: `https://images.unsplash.com/photo-1544644181-1484b3fdfc62?q=80&w=100&auto=format&fit=crop`,
+          address: p.address,
+          social: { whatsapp: "9100000000" }
+        }));
+        setPlaces(transformed);
+      }
+    } catch (err) {
+      console.error("Fetch error:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if ("geolocation" in navigator) {
+      navigator.geolocation.getCurrentPosition((pos) => {
+        const newLoc = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        setUserLoc(newLoc);
+        fetchRealPlaces(newLoc.lat, newLoc.lng, selectedCategory);
+      });
+    } else {
+      fetchRealPlaces(userLoc.lat, userLoc.lng, selectedCategory);
+    }
+  }, [selectedCategory]);
 
   const filteredProviders = useMemo(() => {
-    let filtered = providers.filter(p => {
-      const matchesSearch = p.name.toLowerCase().includes(search.toLowerCase()) || 
-                           p.subject.toLowerCase().includes(search.toLowerCase());
-      const matchesSubject = selectedSubject === "All" || p.subject === selectedSubject;
-      const matchesRating = p.rating >= minRating;
-      const feesNum = parseInt(p.fees.replace(/[^0-9]/g, ""));
-      const matchesFees = feesNum <= maxFees;
-      
-      return matchesSearch && matchesSubject && matchesRating && matchesFees;
-    });
+    return places.filter(p => p.name.toLowerCase().includes(search.toLowerCase()));
+  }, [search, places]);
 
-    if (sortBy === "rating") filtered.sort((a, b) => b.rating - a.rating);
-    else if (sortBy === "fees") {
-      filtered.sort((a, b) => {
-        const feesA = parseInt(a.fees.replace(/[^0-9]/g, ""));
-        const feesB = parseInt(b.fees.replace(/[^0-9]/g, ""));
-        return feesA - feesB;
-      });
-    }
-    return filtered;
-  }, [search, selectedSubject, minRating, maxFees, sortBy]);
-
-  const subjects = ["All", ...Array.from(new Set(providers.map(p => p.subject)))];
+  const categories = [
+    { id: "library", label: "Libraries", icon: "📚" },
+    { id: "mess", label: "Mess/Tiffin", icon: "🍱" },
+    { id: "hostel", label: "Hostels/PG", icon: "🏠" },
+    { id: "tutor", label: "Tutors", icon: "👨‍🏫" },
+  ];
 
   return (
     <div className="relative flex flex-col h-[calc(100vh-72px)] overflow-hidden bg-[#0a0f1a]">
@@ -100,27 +125,22 @@ export default function MapPage() {
 
           <div className="space-y-6 mb-8">
             <div>
-              <label className="text-xs font-black text-muted-foreground uppercase tracking-widest mb-3 block">Subjects</label>
+              <label className="text-xs font-black text-muted-foreground uppercase tracking-widest mb-3 block">Categories</label>
               <div className="flex flex-wrap gap-2">
-                {subjects.map(s => (
-                  <button key={s} onClick={() => setSelectedSubject(s)}
-                    className={`px-3 py-2 rounded-xl text-[10px] font-bold transition-all border ${selectedSubject === s ? "bg-primary text-white border-primary" : "bg-white/5 text-muted-foreground border-white/10 hover:bg-white/10"}`}>
-                    {s}
+                {categories.map(c => (
+                  <button key={c.id} onClick={() => setSelectedCategory(c.id)}
+                    className={`px-3 py-2.5 rounded-xl text-[10px] font-bold transition-all border ${selectedCategory === c.id ? "bg-primary text-white border-primary" : "bg-white/5 text-muted-foreground border-white/10 hover:bg-white/10"}`}>
+                    {c.icon} {c.label}
                   </button>
                 ))}
               </div>
             </div>
-            <div>
-              <label className="text-xs font-black text-muted-foreground uppercase tracking-widest mb-3 block">Min Rating</label>
-              <div className="flex gap-2">
-                {[0, 3, 4, 4.5].map(r => (
-                  <button key={r} onClick={() => setMinRating(r)}
-                    className={`flex-1 py-2 rounded-xl text-[10px] font-bold border transition-all ${minRating === r ? "bg-yellow-500/20 text-yellow-500 border-yellow-500/50" : "bg-white/5 text-muted-foreground border-white/10"}`}>
-                    {r === 0 ? "All" : `${r}+ ⭐`}
-                  </button>
-                ))}
+            {loading && (
+              <div className="py-4 text-center">
+                <div className="w-6 h-6 border-2 border-primary/20 border-t-primary rounded-full animate-spin mx-auto mb-2"></div>
+                <p className="text-[10px] text-muted-foreground">Searching internet data...</p>
               </div>
-            </div>
+            )}
           </div>
 
           <div className="space-y-4">
@@ -151,7 +171,7 @@ export default function MapPage() {
 
         {/* Map View (Full screen on mobile) */}
         <div className="flex-1 relative w-full h-full">
-          <Map providers={filteredProviders} />
+          <Map providers={filteredProviders} center={userLoc} />
           
           {/* Map UI Buttons */}
           <div className="absolute bottom-24 md:bottom-6 right-4 md:right-6 z-30 flex flex-col gap-3">
