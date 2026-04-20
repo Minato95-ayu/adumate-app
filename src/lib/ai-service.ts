@@ -3,10 +3,7 @@
  * Calls our internal API route to handle multi-provider fallback securely and avoid CORS issues.
  */
 
-interface AIResponse {
-  text: string;
-  provider: string;
-}
+import { AIResponse } from "@/types";
 
 export async function multiCallAI(prompt: string, options: { json?: boolean, image?: string } = {}): Promise<AIResponse> {
   try {
