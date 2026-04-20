@@ -107,7 +107,7 @@ export default function HomePage() {
             Entering the Adumate 3D Ecosystem
           </div>
           
-          <h1 className="text-5xl md:text-7xl font-extrabold text-white tracking-tight mb-6 leading-[1.1] drop-shadow-2xl">
+          <h1 className="text-4xl md:text-7xl font-extrabold text-white tracking-tight mb-6 leading-tight drop-shadow-2xl">
             Experience the <br/>
             <span className="text-transparent bg-clip-text bg-gradient-to-br from-primary via-orange-400 to-yellow-500 filter drop-shadow-[0_0_20px_rgba(255,107,0,0.5)]">Next-Gen</span> Student Life.
           </h1>
@@ -133,10 +133,10 @@ export default function HomePage() {
 
             <Link 
               href="/login?role=partner" 
-              className="btn-3d group relative w-full sm:w-auto flex items-center justify-center gap-3 bg-gradient-to-b from-slate-700 to-slate-900 border-2 border-slate-600 hover:border-primary/50 text-white px-10 py-5 rounded-2xl font-black text-xl shadow-[0_10px_0_#0f172a,0_15px_20px_rgba(0,0,0,0.5)] hover:shadow-[0_8px_0_#0f172a,0_15px_20px_rgba(255,107,0,0.2)]"
+              className="btn-3d group relative w-full sm:w-auto flex items-center justify-center gap-3 bg-gradient-to-b from-slate-700 to-slate-900 border-2 border-slate-600 hover:border-primary/50 text-white px-8 py-4 md:px-10 md:py-5 rounded-2xl font-black text-lg md:text-xl shadow-[0_10px_0_#0f172a,0_15px_20px_rgba(0,0,0,0.5)]"
             >
               <span>Partner With Us</span>
-              <Building size={24} className="text-primary group-hover:animate-bounce drop-shadow-lg" />
+              <Building size={20} className="text-primary group-hover:animate-bounce drop-shadow-lg" />
             </Link>
           </div>
         </motion.div>
@@ -271,7 +271,7 @@ export default function HomePage() {
                 transition={{ delay: i * 0.15, duration: 0.7, type: "spring" }}
                 whileHover={{ y: -12, rotateY: 6, rotateX: -4, scale: 1.02 }}
                 onClick={card.action}
-                className={`relative bg-gradient-to-br ${card.gradient} border ${card.border} rounded-[2rem] p-8 cursor-pointer group overflow-hidden shadow-2xl ${card.glow} transform-style-preserve-3d transition-all`}
+                className={`relative bg-gradient-to-br ${card.gradient} border ${card.border} rounded-[2rem] p-6 md:p-8 cursor-pointer group overflow-hidden shadow-2xl ${card.glow} transform-style-preserve-3d transition-all`}
               >
                 {/* Animated background glow */}
                 <div className={`absolute inset-0 bg-gradient-to-br ${card.gradient} opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-xl`} />
