@@ -54,12 +54,11 @@ export default function Map({ providers, center = [28.6139, 77.2090] }: MapProps
     }
     
     setLoadingRoute(true);
-    const apiKey = process.env.NEXT_PUBLIC_ORS_API_KEY;
     const start = `${userLocation[1]},${userLocation[0]}`;
     const end = `${endLng},${endLat}`;
     
     try {
-      const resp = await fetch(`https://api.openrouteservice.org/v2/directions/driving-car?api_key=${apiKey}&start=${start}&end=${end}`);
+      const resp = await fetch(`/api/route?start=${start}&end=${end}`);
       const data = await resp.json();
       
       if (data.features && data.features.length > 0) {

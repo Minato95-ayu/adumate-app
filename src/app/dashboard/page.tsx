@@ -81,8 +81,7 @@ export default function Dashboard() {
         setLoading(false);
       }
     };
-    const timer = setTimeout(fetchServices, 500);
-    return () => clearTimeout(timer);
+    fetchServices();
   }, []);
 
   // Fetch user requests (only when logged in)
