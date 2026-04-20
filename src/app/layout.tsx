@@ -78,8 +78,7 @@ export const metadata: Metadata = {
     canonical: BASE_URL,
   },
   verification: {
-    // Add your Google Search Console verification code here after adding site
-    google: "PASTE_YOUR_GOOGLE_VERIFICATION_CODE_HERE",
+    google: "7KdkTinv7m2bpowBQmGduhHxuAGEoHMQQmBdL-noHVI",
   },
   category: "education",
 };
