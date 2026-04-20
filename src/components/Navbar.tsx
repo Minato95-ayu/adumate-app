@@ -22,10 +22,10 @@ export default function Navbar() {
         <Link href="/" className="flex items-center gap-2 sm:gap-3 group">
           <div className="relative w-8 h-8 sm:w-10 sm:h-10 overflow-hidden rounded-xl shadow-[0_0_15px_rgba(255,107,0,0.3)] group-hover:scale-110 transition-transform duration-300 bg-primary/10 flex items-center justify-center">
             <Image 
-              src="/logo-mark.svg" 
+              src="/logo.png" 
               alt="Adumate Logo" 
               fill 
-              className="object-contain"
+              className="object-cover"
             />
           </div>
           <span className="text-xl sm:text-2xl font-black text-white tracking-tighter">

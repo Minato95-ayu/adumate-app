@@ -1,7 +1,26 @@
 import Link from "next/link";
-import { Globe, Mail, Phone } from "lucide-react";
+import Image from "next/image";
+import { useEffect, useState } from "react";
+import { Globe, Mail, Phone, Download } from "lucide-react";
 
 export default function Footer() {
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+
+  useEffect(() => {
+    window.addEventListener("beforeinstallprompt", (e) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    });
+  }, []);
+
+  const handleInstall = async () => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      if (outcome === "accepted") setDeferredPrompt(null);
+    }
+  };
+
   return (
     <footer className="bg-[#050810] border-t border-white/5 pt-16 pb-8 relative z-10 overflow-hidden mt-auto">
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-1/2 h-1 bg-gradient-to-r from-transparent via-primary to-transparent opacity-50"></div>
@@ -9,8 +28,13 @@ export default function Footer() {
       <div className="max-w-7xl mx-auto px-6 lg:px-8">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-12">
           <div className="md:col-span-2">
-            <Link href="/" className="text-primary font-black text-3xl tracking-tight mb-4 inline-block drop-shadow-[0_0_15px_rgba(255,107,0,0.4)]">
-              Adumate
+            <Link href="/" className="flex items-center gap-3 mb-4 group">
+              <div className="w-10 h-10 rounded-xl overflow-hidden relative border border-white/10">
+                <Image src="/logo.png" alt="PI" fill className="object-cover" />
+              </div>
+              <span className="text-white font-black text-3xl tracking-tight drop-shadow-[0_0_15px_rgba(255,107,0,0.4)]">
+                Adu<span className="text-primary">mate</span>
+              </span>
             </Link>
             <p className="text-muted/80 max-w-sm mt-4 text-sm leading-relaxed">
               India's Ultimate Student Ecosystem. Simplifying student life by connecting you with the best libraries, hostels, mess facilities, tutors, and jobs.
@@ -48,10 +72,20 @@ export default function Footer() {
           </div>
         </div>
         
-        <div className="pt-8 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-4">
-          <p className="text-muted/60 text-sm">
-            &copy; {new Date().getFullYear()} Adumate. All rights reserved.
-          </p>
+        <div className="pt-8 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-6">
+          <div className="flex flex-col md:flex-row items-center gap-4 md:gap-8">
+            <p className="text-muted/60 text-sm">
+              &copy; {new Date().getFullYear()} Adumate. All rights reserved.
+            </p>
+            {deferredPrompt && (
+              <button 
+                onClick={handleInstall}
+                className="bg-primary/20 hover:bg-primary text-primary hover:text-white px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 border border-primary/30"
+              >
+                <Download size={14} /> Install Adumate App
+              </button>
+            )}
+          </div>
           <p className="text-muted/60 text-sm flex items-center gap-1">
             Made with <span className="text-red-500">❤️</span> in India
           </p>
