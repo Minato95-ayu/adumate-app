@@ -6,7 +6,7 @@ import Footer from "@/components/Footer";
 
 const inter = Inter({ subsets: ["latin"] });
 
-const BASE_URL = "https://adumate.app";
+const BASE_URL = "https://www.adumate.in";
 
 export const metadata: Metadata = {
   metadataBase: new URL(BASE_URL),
