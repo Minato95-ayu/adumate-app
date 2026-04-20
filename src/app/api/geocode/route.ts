@@ -2,15 +2,29 @@ import { NextRequest, NextResponse } from "next/server";
 
 const GOOGLE_KEY = process.env.GOOGLE_MAPS_API_KEY || process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
 
+async function fetchWithTimeout(url: string, init: RequestInit = {}, timeoutMs = 8000) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, { ...init, signal: controller.signal });
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+function normalizeCityInput(raw: string) {
+  return raw.replace(/\s+/g, " ").trim();
+}
+
 async function geocodePhoton(city: string) {
   const url = new URL("https://photon.komoot.io/api/");
   url.searchParams.set("q", `${city}, India`);
   url.searchParams.set("limit", "1");
 
-  const res = await fetch(url.toString(), {
+  const res = await fetchWithTimeout(url.toString(), {
     next: { revalidate: 300 },
     headers: { "User-Agent": "Adumate/1.0 (student-ecosystem-app)" },
-  });
+  }, 7000);
   if (!res.ok) throw new Error(`Photon geocode error ${res.status}`);
   const data = await res.json();
   const first = data?.features?.[0];
@@ -37,7 +51,7 @@ async function geocodeGoogle(city: string) {
   url.searchParams.set("address", `${city}, India`);
   url.searchParams.set("key", GOOGLE_KEY);
 
-  const res = await fetch(url.toString(), { next: { revalidate: 300 } });
+  const res = await fetchWithTimeout(url.toString(), { next: { revalidate: 300 } }, 7000);
   if (!res.ok) throw new Error(`Google geocode error ${res.status}`);
   const data = await res.json();
 
@@ -52,9 +66,10 @@ async function geocodeGoogle(city: string) {
 }
 
 async function geocodeOsm(city: string) {
-  const res = await fetch(
+  const res = await fetchWithTimeout(
     `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(`${city}, India`)}&format=json&limit=1`,
-    { headers: { "User-Agent": "Adumate/1.0 (student-ecosystem-app)" } }
+    { headers: { "User-Agent": "Adumate/1.0 (student-ecosystem-app)" } },
+    7000
   );
   const data = await res.json();
   if (!data?.[0]) return null;
@@ -67,8 +82,13 @@ async function geocodeOsm(city: string) {
 }
 
 export async function GET(req: NextRequest) {
-  const city = new URL(req.url).searchParams.get("city");
-  if (!city) return NextResponse.json({ error: "city required" }, { status: 400 });
+  const rawCity = new URL(req.url).searchParams.get("city");
+  if (!rawCity) return NextResponse.json({ error: "city required" }, { status: 400 });
+
+  const city = normalizeCityInput(rawCity);
+  if (city.length < 2 || city.length > 120) {
+    return NextResponse.json({ error: "invalid city input" }, { status: 400 });
+  }
 
   try {
     const photonResult = await geocodePhoton(city);

@@ -58,18 +58,48 @@ type OsmElement = {
   tags?: Record<string, string | undefined>;
 };
 
-async function fetchFromGoogle(lat: string, lon: string, category: string, radius: string) {
+async function fetchWithTimeout(url: string, init: RequestInit = {}, timeoutMs = 10000) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, { ...init, signal: controller.signal });
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+function parseAndValidateInput(searchParams: URLSearchParams) {
+  const latRaw = searchParams.get("lat");
+  const lonRaw = searchParams.get("lon");
+  const categoryRaw = searchParams.get("category") || "library";
+  const radiusRaw = searchParams.get("radius") || "10000";
+
+  if (!latRaw || !lonRaw) return { error: "lat and lon required" as const };
+
+  const lat = Number(latRaw);
+  const lon = Number(lonRaw);
+  const radius = Math.min(Math.max(Number(radiusRaw) || 10000, 1000), 20000);
+  const category = Object.keys(OSM_QUERY_PARTS).includes(categoryRaw) ? categoryRaw : "library";
+
+  if (!Number.isFinite(lat) || !Number.isFinite(lon) || Math.abs(lat) > 90 || Math.abs(lon) > 180) {
+    return { error: "invalid lat/lon" as const };
+  }
+
+  return { lat, lon, category, radius };
+}
+
+async function fetchFromGoogle(lat: number, lon: number, category: string, radius: number) {
   if (!GOOGLE_KEY) return null;
 
   const cfg = GOOGLE_CATEGORY_MAP[category] || GOOGLE_CATEGORY_MAP.library;
   const url = new URL("https://maps.googleapis.com/maps/api/place/nearbysearch/json");
   url.searchParams.set("location", `${lat},${lon}`);
-  url.searchParams.set("radius", radius);
+  url.searchParams.set("radius", String(radius));
   url.searchParams.set("type", cfg.type);
   url.searchParams.set("keyword", cfg.keyword);
   url.searchParams.set("key", GOOGLE_KEY);
 
-  const res = await fetch(url.toString(), { next: { revalidate: 300 } });
+  const res = await fetchWithTimeout(url.toString(), { next: { revalidate: 300 } }, 9000);
   if (!res.ok) throw new Error(`Google Places error ${res.status}`);
 
   const data = await res.json();
@@ -108,9 +138,10 @@ async function fetchFromOsm(lat: string, lon: string, category: string, radius: 
   );
   out center 120;`;
 
-  const res = await fetch(
+  const res = await fetchWithTimeout(
     `https://overpass-api.de/api/interpreter?data=${encodeURIComponent(query)}`,
-    { next: { revalidate: 300 } }
+    { next: { revalidate: 300 } },
+    9000
   );
 
   if (!res.ok) throw new Error(`Overpass error ${res.status}`);
@@ -142,15 +173,11 @@ async function fetchFromOsm(lat: string, lon: string, category: string, radius: 
 }
 
 export async function GET(req: NextRequest) {
-  const { searchParams } = new URL(req.url);
-  const lat = searchParams.get("lat");
-  const lon = searchParams.get("lon");
-  const category = searchParams.get("category") || "library";
-  const radius = searchParams.get("radius") || "10000";
-
-  if (!lat || !lon) {
-    return NextResponse.json({ error: "lat and lon required" }, { status: 400 });
+  const parsed = parseAndValidateInput(new URL(req.url).searchParams);
+  if ("error" in parsed) {
+    return NextResponse.json({ error: parsed.error, places: [] }, { status: 400 });
   }
+  const { lat, lon, category, radius } = parsed;
 
   try {
     const googleData = await fetchFromGoogle(lat, lon, category, radius);
@@ -164,7 +191,7 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const osmData = await fetchFromOsm(lat, lon, category, radius);
+    const osmData = await fetchFromOsm(String(lat), String(lon), category, String(radius));
     return NextResponse.json(osmData, {
       headers: { "Cache-Control": "s-maxage=300, stale-while-revalidate=60" },
     });
