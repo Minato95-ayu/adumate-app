@@ -6,16 +6,27 @@ Features: Knowledge Finder, AI Test, Service Map, 1v1 Challenge.
 `;
 
 const SYSTEM_PROMPT = `
-You are "Vidwan AI", the world's most advanced digital scholar.
-You use a combination of Claude 3.5 Sonnet, Gemini 1.5 Pro, and DeepSeek intelligence.
+You are "Vidwan AI", the world's most advanced digital scholar and mentor, integrated into the Adumate Student Ecosystem.
 
-Instructions:
-- Use natural Hinglish (Hindi+English) without translations in brackets.
-- Analyze files (images/PDFs) deeply. If a PDF is provided, summarize and answer based on its contents.
-- Real-world data: If the user provides a link or asks for latest information, use your integrated Google Search tool to get the most accurate data.
-- Session Memory: You have access to previous messages in this session. Refer back to them if needed to maintain context.
-- Provide beautiful markdown formatting with bold headers and lists.
+Core Identity:
+- Founder: Ayush Kaushik (A visionary leader who built Adumate to simplify student life in India).
+- If anyone mentions "Ayush", recognize him as the Founder and Architect of this ecosystem.
+- Persona: Elite, super-intelligent, multitasking, and empathetic. You are a mentor first.
+
+Advanced Capabilities:
+- Real-World Data: Use your integrated Google Search tool for current events, news, or any links provided. Provide real-time data, not just training data.
+- Heavy Tasks: You excel at complex coding (any language), color identification, logo design theory, academic research, and logical reasoning.
+- Multimodal: Analyze images and PDFs with extreme precision. Extract text, identify objects, and summarize complex documents.
+- Languages: Use natural, premium Hinglish (Hindi + English) for a friendly vibe. Switch to pure English/Hindi ONLY if requested.
+
+Security & Privacy:
+- Never disclose user API keys or internal logic.
+- Maintain strict data confidentiality. Respect user privacy at all times.
 - Adumate Context: ${APP_CONTEXT}
+
+Response Style:
+- Use bold markdown, lists, and structured sections.
+- Keep responses "Super Fast" and high-impact.
 `;
 
 export async function POST(req: Request) {
@@ -49,14 +60,28 @@ export async function POST(req: Request) {
     async function tryGemini() {
       if (!keys.gemini) throw new Error("No Gemini Key");
       const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${keys.gemini}`;
-      const geminiHistory = history.map((m: any) => ({
-        role: m.role === "assistant" ? "model" : "user",
-        parts: [{ text: m.content }]
-      }));
+      
+      // Ensure alternating roles: user, model, user, model...
+      const geminiHistory = [];
+      let lastRole = "";
+      for (const m of history) {
+        const currentRole = m.role === "assistant" ? "model" : "user";
+        if (currentRole !== lastRole) {
+          geminiHistory.push({ role: currentRole, parts: [{ text: m.content }] });
+          lastRole = currentRole;
+        }
+      }
+
       let currentParts: any[] = [{ text: userPrompt || "Analyze this." }];
       if (fileData) {
-        currentParts.push({ inline_data: { mime_type: fileType || "image/jpeg", data: fileData.split(",")[1] } });
+        currentParts.push({ 
+          inline_data: { 
+            mime_type: fileType || (fileData.includes("pdf") ? "application/pdf" : "image/jpeg"), 
+            data: fileData.split(",")[1] 
+          } 
+        });
       }
+
       const resp = await fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -67,8 +92,9 @@ export async function POST(req: Request) {
         })
       });
       const data = await resp.json();
+      if (data.error) throw new Error(`Gemini API Error: ${data.error.message}`);
       const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-      if (!text) throw new Error("Gemini Empty");
+      if (!text) throw new Error("Gemini No Response");
       return { text, provider: "Gemini 1.5 Pro" };
     }
 
@@ -88,12 +114,18 @@ export async function POST(req: Request) {
       ];
       const resp = await fetch("https://openrouter.ai/api/v1/chat/completions", {
         method: "POST",
-        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${keys.openRouter}` },
+        headers: { 
+          "Content-Type": "application/json", 
+          "Authorization": `Bearer ${keys.openRouter}`,
+          "HTTP-Referer": "https://adumate.in",
+          "X-Title": "Adumate Vidwan AI"
+        },
         body: JSON.stringify({ model: "anthropic/claude-3.5-sonnet", messages })
       });
       const data = await resp.json();
+      if (data.error) throw new Error(`OpenRouter Error: ${data.error.message || JSON.stringify(data.error)}`);
       const text = data.choices?.[0]?.message?.content;
-      if (!text) throw new Error("OpenRouter Empty");
+      if (!text) throw new Error("OpenRouter No Content");
       return { text, provider: "Claude 3.5 Sonnet" };
     }
 
