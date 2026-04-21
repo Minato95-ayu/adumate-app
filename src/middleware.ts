@@ -12,8 +12,10 @@ export function middleware(request: NextRequest) {
   const ip = request.ip || 'anonymous';
   const now = Date.now();
   
-  // Security Headers
+  // Dynamic Security Headers (Supplementing next.config.ts)
   const response = NextResponse.next();
+  response.headers.set('X-DNS-Prefetch-Control', 'on');
+  response.headers.set('Strict-Transport-Security', 'max-age=63072000; includeSubDomains; preload');
   
   // Rate Limiting Logic
   if (request.nextUrl.pathname.startsWith('/api/')) {
@@ -29,6 +31,7 @@ export function middleware(request: NextRequest) {
     rateLimitMap.set(ip, rateLimitInfo);
     
     if (rateLimitInfo.count > MAX_REQUESTS_PER_WINDOW) {
+      console.warn(`[SECURITY] Rate limit exceeded for IP: ${ip}`);
       return new NextResponse('Too Many Requests', { 
         status: 429,
         headers: {
@@ -45,12 +48,18 @@ export function middleware(request: NextRequest) {
     response.headers.set('X-RateLimit-Remaining', Math.max(0, MAX_REQUESTS_PER_WINDOW - rateLimitInfo.count).toString());
   }
 
-  // Bot Detection: Block requests with no User-Agent or suspicious ones
-  const userAgent = request.headers.get('user-agent') || '';
-  if (!userAgent || userAgent.includes('bot') || userAgent.includes('crawler') || userAgent.includes('spider')) {
-    // We allow search engine bots for pages, but not for API routes
-    if (request.nextUrl.pathname.startsWith('/api/')) {
-      return new NextResponse('Bots not allowed on API routes', { status: 403 });
+  // Enhanced Bot Detection
+  const userAgent = request.headers.get('user-agent')?.toLowerCase() || '';
+  const suspiciousBots = ['bot', 'crawler', 'spider', 'headless', 'puppeteer', 'selenium', 'python-requests', 'node-fetch'];
+  
+  const isBot = suspiciousBots.some(bot => userAgent.includes(bot));
+  
+  if (isBot) {
+    // We allow search engine bots for public pages, but strictly block for API and Auth routes
+    const sensitiveRoutes = ['/api/', '/login', '/register'];
+    if (sensitiveRoutes.some(route => request.nextUrl.pathname.startsWith(route))) {
+      console.warn(`[SECURITY] Bot blocked: ${userAgent} on ${request.nextUrl.pathname}`);
+      return new NextResponse('Bots not allowed on sensitive routes', { status: 403 });
     }
   }
 
