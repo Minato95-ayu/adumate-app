@@ -17,13 +17,16 @@ interface Message {
 
 const formatMessage = (text: string) => {
   if (!text) return "";
+  
+  // Split by code blocks first to preserve them
   const parts = text.split(/(```[\s\S]*?```)/g);
+  
   return parts.map((part, index) => {
     if (part.startsWith("```")) {
       const code = part.replace(/```[a-z]*\n?|```/g, "").trim();
       const lang = part.match(/```([a-z]*)/)?.[1] || "code";
       return (
-        <div key={index} className="my-4 relative group">
+        <div key={index} className="my-6 relative group">
           <div className="absolute right-4 top-2 text-[10px] font-black text-slate-500 uppercase tracking-widest">{lang}</div>
           <pre className="bg-[#050505] p-5 rounded-2xl overflow-x-auto text-sm font-mono text-blue-400 border border-white/5 shadow-inner">
             <code>{code}</code>
@@ -31,17 +34,57 @@ const formatMessage = (text: string) => {
         </div>
       );
     }
-    const boldParts = part.split(/(\*\*.*?\*\*)/g);
+
+    // Process non-code text
+    const lines = part.split("\n");
     return (
-      <span key={index}>
-        {boldParts.map((bp, i) => {
-          if (bp.startsWith("**") && bp.endsWith("**")) {
-            return <strong key={i} className="text-white font-black">{bp.slice(2, -2)}</strong>;
+      <div key={index} className="space-y-3">
+        {lines.map((line, lineIdx) => {
+          // Horizontal Rule
+          if (line.trim() === "---") {
+            return <hr key={lineIdx} className="my-6 border-white/10" />;
           }
-          return bp;
+
+          // Bullet points
+          if (line.trim().startsWith("- ") || line.trim().startsWith("• ")) {
+            return (
+              <div key={lineIdx} className="flex gap-3 pl-4 text-slate-300">
+                <span className="text-primary">•</span>
+                <span>{processLine(line.trim().substring(2))}</span>
+              </div>
+            );
+          }
+
+          // Numbered lists
+          if (/^\d+\.\s/.test(line.trim())) {
+            return (
+              <div key={lineIdx} className="flex gap-3 pl-4 text-slate-300">
+                <span className="text-primary font-bold">{line.trim().match(/^\d+\./)?.[0]}</span>
+                <span>{processLine(line.trim().replace(/^\d+\.\s/, ""))}</span>
+              </div>
+            );
+          }
+
+          // Regular paragraph
+          return (
+            <p key={lineIdx} className="text-slate-300 leading-relaxed">
+              {processLine(line)}
+            </p>
+          );
         })}
-      </span>
+      </div>
     );
+  });
+};
+
+// Helper to handle bold text within a line
+const processLine = (line: string) => {
+  const boldParts = line.split(/(\*\*.*?\*\*)/g);
+  return boldParts.map((bp, i) => {
+    if (bp.startsWith("**") && bp.endsWith("**")) {
+      return <strong key={i} className="text-white font-black">{bp.slice(2, -2)}</strong>;
+    }
+    return bp;
   });
 };
 
