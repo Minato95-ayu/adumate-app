@@ -1,7 +1,4 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
 import { NextResponse } from "next/server";
-
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
 
 const APP_CONTEXT = `
 Adumate Features:
@@ -31,100 +28,77 @@ Your Role:
 - Answer student queries about studies or the app.
 - If a student feels down after a test, encourage them.
 - Suggest new things to learn.
-- Use your tools for real-time information.
 `;
-
-// Helper for "Internet Search" simulation or real fetch if available
-async function searchInternet(query: string) {
-  // In a real app, you'd use Tavily, Serper, or Google Search API
-  // For now, we simulate a scholarly search response
-  return `Search results for "${query}": Recent data shows significant advancements in this topic... [Simulated Search Result]`;
-}
 
 export async function POST(req: Request) {
   try {
     const { messages } = await req.json();
 
-    const model = genAI.getGenerativeModel({
-      model: "gemini-2.0-flash",
-      systemInstruction: SYSTEM_PROMPT,
-      tools: [{
-        functionDeclarations: [
-          {
-            name: "search_internet",
-            description: "Search the internet for the latest information on a topic",
-            parameters: {
-              type: "object",
-              properties: {
-                query: {
-                  type: "string",
-                  description: "The search query",
-                },
-              },
-              required: ["query"],
-            },
-          },
-          {
-            name: "get_service_info",
-            description: "Get information about specific services in Adumate (libraries, hostels, etc.)",
-            parameters: {
-              type: "object",
-              properties: {
-                category: {
-                  type: "string",
-                  description: "The category of service (e.g., 'library', 'hostel')",
-                },
-              },
-            },
-          }
-        ],
-      }],
-    });
-
-    const chat = model.startChat({
-      history: messages.slice(0, -1).map((m: any) => ({
-        role: m.role === "user" ? "user" : "model",
-        parts: [{ text: m.content }],
-      })),
-    });
-
-    const lastMessage = messages[messages.length - 1].content;
-    const result = await chat.sendMessage(lastMessage);
-    const response = await result.response;
-    
-    // Handle function calls if any
-    const calls = response.functionCalls();
-    if (calls && calls.length > 0) {
-      const toolResponses: any[] = [];
-      for (const call of calls) {
-        if (call.name === "search_internet") {
-          const searchData = await searchInternet((call.args as any).query);
-          toolResponses.push({
-            functionResponse: {
-              name: "search_internet",
-              response: { content: searchData },
-            },
-          });
-        } else if (call.name === "get_service_info") {
-          toolResponses.push({
-            functionResponse: {
-              name: "get_service_info",
-              response: { content: "Adumate has over 500+ verified libraries and hostels across major student hubs in India." },
-            },
-          });
-        }
-      }
-
-      // Send tool responses back to model to get final answer
-      const finalResult = await chat.sendMessage(toolResponses);
-      const finalText = finalResult.response.text();
-      return NextResponse.json({ role: "assistant", content: finalText });
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      return NextResponse.json({ error: "GEMINI_API_KEY is not configured" }, { status: 500 });
     }
 
-    const text = response.text();
-    return NextResponse.json({ role: "assistant", content: text });
+    // Use direct fetch to Gemini API to match the project's existing working pattern
+    // Try gemini-1.5-flash first, then gemini-pro
+    const models = ["gemini-1.5-flash", "gemini-pro"];
+    let lastError = "";
+
+    for (const model of models) {
+      try {
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+        
+        // Format prompt for Gemini with system instruction
+        // We combine system prompt and conversation history into the contents
+        const contents = [
+          {
+            role: "user",
+            parts: [{ text: `SYSTEM INSTRUCTION: ${SYSTEM_PROMPT}\n\nUser conversation follows.` }]
+          },
+          {
+            role: "model",
+            parts: [{ text: "Understood. I am Vidwan AI, your scholarly digital mentor. How can I assist you today?" }]
+          }
+        ];
+
+        // Add history (excluding the first assistant message)
+        messages.forEach((m: any, i: number) => {
+          if (i === 0 && m.role === "assistant") return;
+          contents.push({
+            role: m.role === "user" ? "user" : "model",
+            parts: [{ text: m.content }]
+          });
+        });
+
+        const resp = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents,
+            generationConfig: {
+              temperature: 0.7,
+              maxOutputTokens: 1000,
+            }
+          })
+        });
+
+        const data = await resp.json();
+        if (data.error) throw new Error(data.error.message || "Gemini Error");
+
+        const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (text) {
+          return NextResponse.json({ role: "assistant", content: text });
+        }
+      } catch (err: any) {
+        console.error(`Gemini fallback failed for ${model}:`, err.message);
+        lastError = err.message;
+        continue;
+      }
+    }
+
+    return NextResponse.json({ error: lastError || "Failed to connect to Vidwan AI" }, { status: 500 });
   } catch (error: any) {
-    console.error("Vidwan AI Error:", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error("Vidwan AI API Global Error:", error);
+    return NextResponse.json({ error: error.message || "Internal Server Error" }, { status: 500 });
   }
 }
