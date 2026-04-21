@@ -12,19 +12,18 @@ Features:
 `;
 
 const SYSTEM_PROMPT = `
-You are "Vidwan AI", the highly intelligent digital scholar of Adumate.
-Your mission is to help Indian students with their academic and app-related queries.
+You are "Vidwan AI", the world-class digital scholar and multitasking assistant of Adumate.
+Your mission is to help Indian students with academic queries, code, and document analysis.
 
-Language Guidelines:
-- Speak naturally in "Hinglish" (a smooth mix of Hindi and English).
-- DO NOT provide English translations in brackets (e.g., do NOT say "Main theek hoon (I am fine)").
-- Just talk like a real human mentor. If you use a Hindi sentence, just say it. If you use English, just say it.
-- Match the user's tone. If they speak English, you speak English. If they speak Hindi, you speak Hinglish.
+Capabilities:
+- You can analyze Images, PDFs, and Code files.
+- You speak naturally in Hinglish (Hindi + English) without brackets.
+- You provide beautiful, well-formatted answers.
+- Use markdown for bold text and code blocks.
 
 Personality:
-- Smart, encouraging, and direct.
-- No fluff, no robotic repetitive translations.
-- Be the best AI mentor for Indian students.
+- Extremely smart, like GPT-4o or Gemini 1.5 Pro.
+- Witty, scholarly, and direct.
 
 Adumate Context:
 ${APP_CONTEXT}
@@ -32,59 +31,46 @@ ${APP_CONTEXT}
 
 export async function POST(req: Request) {
   try {
-    const { prompt: userPrompt } = await req.json();
+    const { prompt: userPrompt, fileData, fileType } = await req.json();
 
     const apiKey = process.env.GEMINI_API_KEY;
-    const groqKey = process.env.GROQ_API_KEY;
-
-    if (!apiKey && !groqKey) {
-      return NextResponse.json({ error: "AI service unavailable. Please set API keys." }, { status: 500 });
+    if (!apiKey) {
+      return NextResponse.json({ error: "AI keys missing." }, { status: 500 });
     }
 
-    // Try Gemini (Stable v1)
-    if (apiKey) {
-      try {
-        const url = `https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent?key=${apiKey}`;
-        
-        const resp = await fetch(url, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            contents: [{ role: "user", parts: [{ text: `${SYSTEM_PROMPT}\n\nUser Question: ${userPrompt}` }] }],
-            generationConfig: { temperature: 0.7, maxOutputTokens: 1000 }
-          })
-        });
+    // Using Gemini 1.5 Flash (supports Vision/PDF/Files)
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+    
+    let parts: any[] = [{ text: `SYSTEM: ${SYSTEM_PROMPT}\n\nUser Question: ${userPrompt}` }];
 
-        const data = await resp.json();
-        const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-        if (text) return NextResponse.json({ text });
-      } catch (e) {
-        console.error("Gemini failed:", e);
-      }
+    // Handle Multimodal (Image/PDF)
+    if (fileData && fileType) {
+      parts.push({
+        inline_data: {
+          mime_type: fileType,
+          data: fileData.split(",")[1] // Remove base64 prefix
+        }
+      });
     }
 
-    // Fallback to Groq
-    if (groqKey) {
-      try {
-        const groqResp = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-          method: "POST",
-          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${groqKey}` },
-          body: JSON.stringify({
-            model: "llama-3.3-70b-versatile",
-            messages: [
-              { role: "system", content: SYSTEM_PROMPT },
-              { role: "user", content: userPrompt }
-            ]
-          })
-        });
-        const groqData = await groqResp.json();
-        return NextResponse.json({ text: groqData.choices?.[0]?.message?.content });
-      } catch (e) {}
-    }
+    const resp = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contents: [{ role: "user", parts }],
+        generationConfig: { temperature: 0.7, maxOutputTokens: 2000 }
+      })
+    });
 
-    return NextResponse.json({ error: "Something went wrong" }, { status: 500 });
+    const data = await resp.json();
+    if (data.error) throw new Error(data.error.message);
+
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "I am processing the data...";
+    
+    return NextResponse.json({ text });
 
   } catch (error: any) {
+    console.error("Vidwan API Error:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
