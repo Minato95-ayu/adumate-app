@@ -57,13 +57,14 @@ export async function POST(req: Request) {
     // --- HELPER: PROVIDER WRAPPERS ---
 
     // 1. GEMINI (Google)
-    async function tryGemini() {
+    async function tryGemini(modelName = "gemini-1.5-pro") {
       if (!keys.gemini) throw new Error("No Gemini Key");
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${keys.gemini}`;
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${keys.gemini}`;
       
-      // Ensure alternating roles: user, model, user, model...
+      console.log(`Trying Gemini ${modelName}...`);
+
       const geminiHistory = [];
-      let lastRole = "";
+      let lastRole = "model"; 
       for (const m of history) {
         const currentRole = m.role === "assistant" ? "model" : "user";
         if (currentRole !== lastRole) {
@@ -82,25 +83,35 @@ export async function POST(req: Request) {
         });
       }
 
+      const body = { 
+        system_instruction: { parts: [{ text: SYSTEM_PROMPT }] },
+        contents: [...geminiHistory, { role: "user", parts: currentParts }],
+        tools: [{ google_search_retrieval: {} }] // Simpler schema is more stable
+      };
+
       const resp = await fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          system_instruction: { parts: [{ text: SYSTEM_PROMPT }] },
-          contents: [...geminiHistory, { role: "user", parts: currentParts }],
-          tools: [{ google_search_retrieval: {} }]
-        })
+        body: JSON.stringify(body)
       });
+      
       const data = await resp.json();
-      if (data.error) throw new Error(`Gemini API Error: ${data.error.message}`);
+      if (data.error) {
+        console.error(`Gemini ${modelName} Error:`, data.error.message);
+        if (modelName === "gemini-1.5-pro") return tryGemini("gemini-1.5-flash");
+        throw new Error(`Gemini ${modelName} Error: ${data.error.message}`);
+      }
+      
       const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-      if (!text) throw new Error("Gemini No Response");
-      return { text, provider: "Gemini 1.5 Pro" };
+      if (!text) throw new Error(`Gemini ${modelName} No Response`);
+      return { text, provider: `Gemini 1.5 ${modelName.includes("pro") ? "Pro" : "Flash"} (Search)` };
     }
 
     // 2. OPENROUTER (Claude 3.5 Sonnet)
-    async function tryOpenRouter() {
+    async function tryOpenRouter(modelName = "anthropic/claude-3.5-sonnet") {
       if (!keys.openRouter) throw new Error("No OpenRouter Key");
+      console.log(`Trying OpenRouter ${modelName}...`);
+
       const messages = [
         { role: "system", content: SYSTEM_PROMPT },
         ...chatHistory,
@@ -120,10 +131,14 @@ export async function POST(req: Request) {
           "HTTP-Referer": "https://adumate.in",
           "X-Title": "Adumate Vidwan AI"
         },
-        body: JSON.stringify({ model: "anthropic/claude-3.5-sonnet", messages })
+        body: JSON.stringify({ model: modelName, messages })
       });
       const data = await resp.json();
-      if (data.error) throw new Error(`OpenRouter Error: ${data.error.message || JSON.stringify(data.error)}`);
+      if (data.error) {
+        console.error(`OpenRouter ${modelName} Error:`, data.error.message);
+        if (modelName.includes("beta")) throw new Error(data.error.message);
+        return tryOpenRouter("anthropic/claude-3.5-sonnet:beta"); // Try beta fallback
+      }
       const text = data.choices?.[0]?.message?.content;
       if (!text) throw new Error("OpenRouter No Content");
       return { text, provider: "Claude 3.5 Sonnet" };
