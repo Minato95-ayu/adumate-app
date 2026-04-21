@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import ServiceCard from "@/components/ServiceCard";
 import { ServiceCardSkeleton } from "@/components/ui/skeleton";
-import { Search, Book, Home, Utensils, DoorOpen, GraduationCap, Briefcase, Bell, Clock, CheckCircle, Brain, Zap, User, LogIn, Target, ChevronRight } from "lucide-react";
+import { Search, Book, Home, Utensils, DoorOpen, GraduationCap, Briefcase, Bell, Clock, CheckCircle, Brain, Zap, User, LogIn, Target, ChevronRight, Sparkles } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { collection, query, where, getDocs, addDoc, doc, setDoc, getDoc, limit } from "firebase/firestore";
 import { db, auth } from "@/lib/firebase";
@@ -13,6 +13,7 @@ import Link from "next/link";
 
 const CATEGORIES = [
   { id: "all", name: "All", icon: <Search size={18} /> },
+  { id: "vidwan", name: "Vidwan AI", icon: <Sparkles size={18} />, path: "/vidwan" },
   { id: "ai-test", name: "AI Test", icon: <Brain size={18} />, path: "/test" },
   { id: "library", name: "Library", icon: <Book size={18} /> },
   { id: "hostel", name: "Hostel", icon: <Home size={18} /> },
@@ -34,6 +35,7 @@ const EXAMS = [
 ];
 
 const VIRAL_TOOLS = [
+  { id: "vidwan", name: "Vidwan AI", desc: "Digital scholar se chat karo", icon: "🤖", color: "from-green-500/20 to-teal-500/20", border: "border-green-500/30", path: "/vidwan" },
   { id: "doubt", name: "AI Doubt Solver", desc: "Photo khicho, solution pao", icon: "📸", color: "from-purple-500/20 to-indigo-500/20", border: "border-purple-500/30", path: null },
   { id: "1v1", name: "1v1 Challenge", desc: "Dosto ko harao", icon: "⚔️", color: "from-red-500/20 to-orange-500/20", border: "border-red-500/30", path: null },
 ];

@@ -214,7 +214,7 @@ export default function HomeClient() {
           </div>
 
           {/* Feature Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 perspective-1000">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 perspective-1000">
             {[
               {
                 icon: "🎯",
@@ -254,6 +254,19 @@ export default function HomeClient() {
                 action: () => router.push("/dashboard"),
                 cta: "Challenge Karo →",
                 ctaColor: "bg-orange-500 hover:bg-orange-400",
+              },
+              {
+                icon: "🤖",
+                title: "Vidwan AI Chat",
+                desc: "Chat with Vidwan AI — your personal scholar for learning anything new or getting app help",
+                gradient: "from-green-600/25 to-teal-600/25",
+                border: "border-green-500/40",
+                glow: "shadow-green-500/20",
+                badge: "New Feature",
+                badgeColor: "text-green-400 bg-green-500/10 border-green-500/20",
+                action: () => router.push("/vidwan"),
+                cta: "Chat Now →",
+                ctaColor: "bg-green-600 hover:bg-green-500",
               },
             ].map((card, i) => (
               <motion.div
