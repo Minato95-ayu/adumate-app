@@ -11,6 +11,7 @@ You are "Vidwan AI", the world's most advanced digital scholar.
 Instructions:
 - Use natural Hinglish (Hindi+English) without translations in brackets.
 - You are extremely smart and can analyze files (images/PDFs) deeply.
+- If a user provides a link, you can discuss the topic based on your knowledge (or simulate web search if you have the data).
 - Provide beautiful markdown formatting with code blocks.
 - Adumate Context: ${APP_CONTEXT}
 `;
@@ -22,7 +23,48 @@ export async function POST(req: Request) {
     const openRouterKey = process.env.OPENROUTER_API_KEY;
     const geminiKey = process.env.GEMINI_API_KEY;
 
-    // --- STRATEGY 1: CLAUDE 3.5 SONNET (OPENROUTER) ---
+    // --- STRATEGY 1: GEMINI 1.5 PRO (Best for PDFs & Multimodal) ---
+    // We try Gemini first because it handles application/pdf and images natively in one go.
+    if (geminiKey) {
+      try {
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${geminiKey}`;
+        
+        let parts: any[] = [{ text: `${SYSTEM_PROMPT}\n\nUser Question: ${userPrompt}` }];
+        
+        if (fileData) {
+          // Detect mime type correctly
+          const mimeType = fileType || (fileData.startsWith("data:application/pdf") ? "application/pdf" : "image/jpeg");
+          parts.push({
+            inline_data: {
+              mime_type: mimeType,
+              data: fileData.split(",")[1]
+            }
+          });
+        }
+
+        const resp = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ 
+            contents: [{ role: "user", parts }],
+            // Enable Web Search (Google Search) for links
+            tools: [{ google_search_retrieval: {} }]
+          })
+        });
+
+        const data = await resp.json();
+        
+        // Handle response with potential tool calls or grounding
+        const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (text) return NextResponse.json({ text, provider: "Gemini 1.5 Pro (Vision + Search)" });
+        
+        console.error("Gemini Pro Detail Error:", JSON.stringify(data, null, 2));
+      } catch (e) {
+        console.error("Gemini failed:", e);
+      }
+    }
+
+    // --- STRATEGY 2: CLAUDE 3.5 SONNET (OPENROUTER) ---
     if (openRouterKey) {
       try {
         const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
@@ -39,6 +81,7 @@ export async function POST(req: Request) {
                 role: "user",
                 content: fileData ? [
                   { type: "text", text: userPrompt || "Analyze this file." },
+                  // For images, Claude uses image_url or base64. OpenRouter handles data URLs.
                   { type: "image_url", image_url: { url: fileData } }
                 ] : userPrompt
               }
@@ -50,43 +93,12 @@ export async function POST(req: Request) {
         if (data.choices?.[0]?.message?.content) {
           return NextResponse.json({ text: data.choices[0].message.content, provider: "Claude 3.5 Sonnet" });
         }
-        console.error("OpenRouter Error:", data);
       } catch (e) {
         console.error("Claude failed:", e);
       }
     }
 
-    // --- STRATEGY 2: GEMINI 1.5 PRO ---
-    if (geminiKey) {
-      try {
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${geminiKey}`;
-        
-        let parts: any[] = [{ text: `${SYSTEM_PROMPT}\n\nUser Question: ${userPrompt}` }];
-        if (fileData) {
-          parts.push({
-            inline_data: {
-              mime_type: fileType || "image/jpeg",
-              data: fileData.split(",")[1]
-            }
-          });
-        }
-
-        const resp = await fetch(url, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ contents: [{ role: "user", parts }] })
-        });
-
-        const data = await resp.json();
-        const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-        if (text) return NextResponse.json({ text, provider: "Gemini 1.5 Pro" });
-        console.error("Gemini Pro Error:", data);
-      } catch (e) {
-        console.error("Gemini failed:", e);
-      }
-    }
-
-    return NextResponse.json({ error: "High-tier models unavailable. Please check API keys." }, { status: 500 });
+    return NextResponse.json({ error: "All premium models failed. Check keys and file size." }, { status: 500 });
 
   } catch (error: any) {
     console.error("Global API Error:", error);
