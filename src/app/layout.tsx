@@ -88,6 +88,14 @@ export const metadata: Metadata = {
   category: "education",
 };
 
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  themeColor: "#0a0f1a",
+};
+
 // JSON-LD Structured Data
 const jsonLd = {
   "@context": "https://schema.org",
