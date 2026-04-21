@@ -11,14 +11,16 @@ You use a combination of Claude 3.5 Sonnet, Gemini 1.5 Pro, and DeepSeek intelli
 
 Instructions:
 - Use natural Hinglish (Hindi+English) without translations in brackets.
-- Analyze files (images/PDFs) deeply.
-- Provide beautiful markdown formatting.
+- Analyze files (images/PDFs) deeply. If a PDF is provided, summarize and answer based on its contents.
+- Real-world data: If the user provides a link or asks for latest information, use your integrated Google Search tool to get the most accurate data.
+- Session Memory: You have access to previous messages in this session. Refer back to them if needed to maintain context.
+- Provide beautiful markdown formatting with bold headers and lists.
 - Adumate Context: ${APP_CONTEXT}
 `;
 
 export async function POST(req: Request) {
   try {
-    const { prompt: userPrompt, fileData, fileType } = await req.json();
+    const { prompt: userPrompt, fileData, fileType, history = [] } = await req.json();
 
     const keys = {
       openRouter: process.env.OPENROUTER_API_KEY,
@@ -27,13 +29,71 @@ export async function POST(req: Request) {
       groq: process.env.GROQ_API_KEY
     };
 
-    // --- TASK ROUTING ---
-    // If there's a file, Gemini 1.5 Pro is usually the best/most stable for large context.
-    // If it's code or reasoning, Claude 3.5 Sonnet is better.
+    const isPdf = fileType?.includes("pdf");
+    const isSearchNeeded = /search|news|latest|today|real world|current/i.test(userPrompt || "");
 
-    // 1. TRY OPENROUTER (Claude 3.5 Sonnet)
+    // Prepare History for OpenAI-style APIs (Claude, DeepSeek, Groq)
+    const chatHistory = history.map((m: any) => ({
+      role: m.role,
+      content: m.content
+    }));
+
+    // --- TASK ROUTING ---
+    
+    // 1. TRY GEMINI 1.5 PRO - Best for PDF, Search, and Large Context
+    // We prioritize Gemini if it's a PDF or a search-related query
+    if (keys.gemini && (isPdf || isSearchNeeded || !keys.openRouter)) {
+      try {
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${keys.gemini}`;
+        
+        const geminiHistory = history.map((m: any) => ({
+          role: m.role === "assistant" ? "model" : "user",
+          parts: [{ text: m.content }]
+        }));
+
+        let currentParts: any[] = [{ text: userPrompt || "Analyze this file." }];
+        if (fileData) {
+          currentParts.push({
+            inline_data: {
+              mime_type: fileType || "image/jpeg",
+              data: fileData.split(",")[1]
+            }
+          });
+        }
+
+        const resp = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ 
+            system_instruction: { parts: [{ text: SYSTEM_PROMPT }] },
+            contents: [
+              ...geminiHistory,
+              { role: "user", parts: currentParts }
+            ],
+            tools: [{ google_search_retrieval: {} }]
+          })
+        });
+        const data = await resp.json();
+        const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (text) return NextResponse.json({ text, provider: "Gemini 1.5 Pro (Search & Multimodal)" });
+      } catch (e) { console.error("Gemini Fallback...", e); }
+    }
+
+    // 2. TRY OPENROUTER (Claude 3.5 Sonnet) - Best for general reasoning & Images
     if (keys.openRouter) {
       try {
+        const messages = [
+          { role: "system", content: SYSTEM_PROMPT },
+          ...chatHistory,
+          {
+            role: "user",
+            content: fileData && !isPdf ? [
+              { type: "text", text: userPrompt || "Analyze this image." },
+              { type: "image_url", image_url: { url: fileData } }
+            ] : userPrompt
+          }
+        ];
+
         const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
           method: "POST",
           headers: {
@@ -42,16 +102,7 @@ export async function POST(req: Request) {
           },
           body: JSON.stringify({
             model: "anthropic/claude-3.5-sonnet",
-            messages: [
-              { role: "system", content: SYSTEM_PROMPT },
-              {
-                role: "user",
-                content: fileData ? [
-                  { type: "text", text: userPrompt || "Analyze this file." },
-                  { type: "image_url", image_url: { url: fileData } }
-                ] : userPrompt
-              }
-            ]
+            messages
           })
         });
         const data = await response.json();
@@ -59,33 +110,6 @@ export async function POST(req: Request) {
           return NextResponse.json({ text: data.choices[0].message.content, provider: "Claude 3.5 Sonnet" });
         }
       } catch (e) { console.error("Claude Fallback..."); }
-    }
-
-    // 2. TRY GEMINI 1.5 PRO
-    if (keys.gemini) {
-      try {
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${keys.gemini}`;
-        let parts: any[] = [{ text: `${SYSTEM_PROMPT}\n\nUser Question: ${userPrompt}` }];
-        if (fileData) {
-          parts.push({
-            inline_data: {
-              mime_type: fileType || "application/pdf",
-              data: fileData.split(",")[1]
-            }
-          });
-        }
-        const resp = await fetch(url, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ 
-            contents: [{ role: "user", parts }],
-            tools: [{ google_search_retrieval: {} }]
-          })
-        });
-        const data = await resp.json();
-        const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-        if (text) return NextResponse.json({ text, provider: "Gemini 1.5 Pro" });
-      } catch (e) { console.error("Gemini Fallback..."); }
     }
 
     // 3. TRY DEEPSEEK (Logic & Coding)
@@ -98,6 +122,7 @@ export async function POST(req: Request) {
             model: "deepseek-chat",
             messages: [
               { role: "system", content: SYSTEM_PROMPT },
+              ...chatHistory,
               { role: "user", content: userPrompt }
             ]
           })
@@ -119,6 +144,7 @@ export async function POST(req: Request) {
             model: "llama-3.3-70b-versatile",
             messages: [
               { role: "system", content: SYSTEM_PROMPT },
+              ...chatHistory,
               { role: "user", content: userPrompt }
             ]
           })

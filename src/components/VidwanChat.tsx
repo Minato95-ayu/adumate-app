@@ -68,17 +68,23 @@ export default function VidwanChat() {
     reader.onloadend = () => setSelectedFile({ data: reader.result as string, type: file.type, name: file.name });
     reader.readAsDataURL(file);
   };
-
   const handleSend = async () => {
     if ((!input.trim() && !selectedFile) || isLoading) return;
+    
     const userMessage: Message = { 
-      role: "user", content: input,
+      role: "user", 
+      content: input,
       filePreview: selectedFile?.type.startsWith("image/") ? selectedFile.data : undefined,
       fileType: selectedFile?.type
     };
-    setMessages((prev) => [...prev, userMessage]);
+
+    // Store current state for API call
+    const currentHistory = [...messages];
     const currentInput = input;
     const currentFile = selectedFile;
+
+    // Update UI immediately
+    setMessages((prev) => [...prev, userMessage]);
     setInput("");
     setSelectedFile(null);
     setIsLoading(true);
@@ -86,16 +92,31 @@ export default function VidwanChat() {
     try {
       const { auth } = await import("@/lib/firebase");
       const token = await auth.currentUser?.getIdToken();
+      
       const response = await fetch("/api/vidwan", {
         method: "POST",
         headers: { "Content-Type": "application/json", ...(token ? { "Authorization": `Bearer ${token}` } : {}) },
-        body: JSON.stringify({ prompt: currentInput || "Analyze this file.", fileData: currentFile?.data, fileType: currentFile?.type }),
+        body: JSON.stringify({ 
+          prompt: currentInput || "Analyze this file.", 
+          fileData: currentFile?.data, 
+          fileType: currentFile?.type,
+          history: currentHistory // Pass history for session memory
+        }),
       });
+
       const data = await response.json();
       if (data.error) throw new Error(data.error);
-      setMessages((prev) => [...prev, { role: "assistant", content: data.text, provider: data.provider }]);
+      
+      setMessages((prev) => [...prev, { 
+        role: "assistant", 
+        content: data.text, 
+        provider: data.provider 
+      }]);
     } catch (error: any) {
-      setMessages((prev) => [...prev, { role: "assistant", content: `Connection Error: ${error.message || "Please check API keys in production."}` }]);
+      setMessages((prev) => [...prev, { 
+        role: "assistant", 
+        content: `Connection Error: ${error.message || "Something went wrong."}` 
+      }]);
     } finally {
       setIsLoading(false);
     }
