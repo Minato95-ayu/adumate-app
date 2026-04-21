@@ -36,21 +36,48 @@ export default function VidwanChat() {
     setIsLoading(true);
 
     try {
-      const response = await fetch("/api/vidwan", {
+      // 1. Get Firebase ID Token
+      const { auth } = await import("@/lib/firebase");
+      const token = await auth.currentUser?.getIdToken();
+      if (!token) {
+        throw new Error("Please login to chat with Vidwan.");
+      }
+
+      // 2. Format Chat Context
+      const chatHistory = messages
+        .map(m => `${m.role === "user" ? "Student" : "Vidwan"}: ${m.content}`)
+        .join("\n");
+      
+      const fullPrompt = `
+You are Vidwan AI, the scholarly digital mentor of Adumate. 
+Adumate helps Indian students with Libraries, Hostels, and AI Tests.
+Founder: Ayush Kaushik.
+
+Conversation History:
+${chatHistory}
+Student: ${input}
+
+Vidwan AI Response (Hindi-English mix, scholarly yet friendly):`;
+
+      // 3. Call existing robust AI endpoint
+      const response = await fetch("/api/ai", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: [...messages, userMessage] }),
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({ prompt: fullPrompt }),
       });
 
       const data = await response.json();
       if (data.error) throw new Error(data.error);
 
-      setMessages((prev) => [...prev, data]);
-    } catch (error) {
+      setMessages((prev) => [...prev, { role: "assistant", content: data.text }]);
+    } catch (error: any) {
       console.error("Chat error:", error);
       setMessages((prev) => [
         ...prev,
-        { role: "assistant", content: "I apologize, but I encountered an error. Please try again." },
+        { role: "assistant", content: error.message || "I apologize, but I encountered an error. Please check your internet or try again." },
       ]);
     } finally {
       setIsLoading(false);
