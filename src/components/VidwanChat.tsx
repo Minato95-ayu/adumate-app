@@ -77,14 +77,30 @@ const formatMessage = (text: string) => {
   });
 };
 
-// Helper to handle bold text within a line
+// Helper to handle bold text and links within a line
 const processLine = (line: string) => {
-  const boldParts = line.split(/(\*\*.*?\*\*)/g);
-  return boldParts.map((bp, i) => {
-    if (bp.startsWith("**") && bp.endsWith("**")) {
-      return <strong key={i} className="text-white font-black">{bp.slice(2, -2)}</strong>;
+  // First handle Markdown links: [text](url)
+  const linkParts = line.split(/(\[.*?\]\(.*?\))/g);
+  
+  return linkParts.map((part, i) => {
+    if (part.startsWith("[") && part.includes("](")) {
+      const text = part.match(/\[(.*?)\]/)?.[1] || "";
+      const url = part.match(/\((.*?)\)/)?.[1] || "#";
+      return (
+        <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-bold">
+          {text}
+        </a>
+      );
     }
-    return bp;
+    
+    // Then handle bold text within the remaining parts
+    const boldParts = part.split(/(\*\*.*?\*\*)/g);
+    return boldParts.map((bp, j) => {
+      if (bp.startsWith("**") && bp.endsWith("**")) {
+        return <strong key={j} className="text-white font-black">{bp.slice(2, -2)}</strong>;
+      }
+      return bp;
+    });
   });
 };
 
