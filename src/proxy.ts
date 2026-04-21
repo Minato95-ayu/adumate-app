@@ -1,5 +1,4 @@
-import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/request';
+import { NextResponse, NextRequest } from 'next/server';
 
 // Basic in-memory rate limiting (Note: This is not shared across serverless instances)
 // For a production-ready solution, use @upstash/ratelimit with Redis.
@@ -8,7 +7,7 @@ const rateLimitMap = new Map<string, { count: number; lastReset: number }>();
 const RATE_LIMIT_WINDOW = 60 * 1000; // 1 minute
 const MAX_REQUESTS_PER_WINDOW = 50; // 50 requests per minute per IP
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const ip = request.ip || 'anonymous';
   const now = Date.now();
   
