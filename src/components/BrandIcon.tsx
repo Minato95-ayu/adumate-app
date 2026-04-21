@@ -28,34 +28,34 @@ export default function BrandIcon({
 
   return (
     <div 
-      className={`relative flex items-center justify-center overflow-hidden rounded-xl border border-white/10 shadow-[0_0_20px_rgba(255,107,0,0.15)] group transition-all duration-300 ${className}`}
+      className={`relative flex items-center justify-center overflow-hidden rounded-2xl border border-white/10 shadow-2xl group transition-all duration-300 ${className}`}
       style={{ width: size, height: size }}
     >
-      {/* Dark Gradient Background matching logo-mark.svg */}
-      <div className="absolute inset-0 bg-gradient-to-br from-[#101B3A] to-[#0A1024]" />
+      {/* Dark Background matching original */}
+      <div className="absolute inset-0 bg-[#0A1024]" />
       
-      {/* Glossy Overlay */}
-      <div className="absolute inset-0 bg-gradient-to-tr from-white/10 via-transparent to-transparent opacity-40" />
+      {/* Subtle Glow */}
+      <div className="absolute inset-0 bg-gradient-to-br from-[#101B3A] to-transparent opacity-50" />
 
       {/* Content Container */}
-      <div className="relative flex items-center gap-[4%] h-full w-full px-[12%]">
+      <div className="relative flex items-center justify-center gap-[2%] h-full w-full px-[5%]">
         <span 
-          className="font-black text-white tracking-tighter leading-none select-none"
-          style={{ fontSize: size * 0.45 }}
+          className="font-black text-white tracking-[-0.05em] leading-none select-none"
+          style={{ fontSize: size * 0.55 }}
         >
           {displayChars}
         </span>
         
-        {/* The Orange Accent Bar from the logo (brand signature) */}
+        {/* The Slim Orange Accent Bar matching original "I" style */}
         {showBar && (
           <div 
-            className="w-[12%] h-[55%] bg-gradient-to-b from-[#FF9A1F] to-[#FF6B00] rounded-sm shadow-[0_0_10px_rgba(255,154,31,0.5)]" 
+            className="w-[8%] h-[60%] bg-gradient-to-b from-[#FFB800] via-[#FF8A00] to-[#FF6B00] rounded-[1px] shadow-[0_0_15px_rgba(255,107,0,0.3)]" 
           />
         )}
       </div>
       
-      {/* Hover Effect */}
-      <div className="absolute inset-0 bg-primary/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+      {/* Inner Shadow for depth */}
+      <div className="absolute inset-0 rounded-2xl shadow-[inset_0_0_20px_rgba(0,0,0,0.5)]" />
     </div>
   );
 }
