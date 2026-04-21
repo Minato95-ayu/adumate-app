@@ -111,7 +111,40 @@ export async function POST(req: Request) {
       return { text, provider: `Gemini 1.5 ${modelName.includes("pro") ? "Pro" : "Flash"} (Search)` };
     }
 
-    // 2. OPENROUTER (Claude 3.5 Sonnet)
+    // 2. PERPLEXITY (via OpenRouter) - The Best for Search
+    async function tryPerplexity(modelName = "perplexity/llama-3.1-sonar-large-128k-online") {
+      if (!keys.openRouter) throw new Error("No OpenRouter Key for Perplexity");
+      console.log(`Trying Perplexity ${modelName}...`);
+      
+      const resp = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+        method: "POST",
+        headers: { 
+          "Content-Type": "application/json", 
+          "Authorization": `Bearer ${keys.openRouter}`,
+          "HTTP-Referer": "https://adumate.in",
+          "X-Title": "Adumate Vidwan AI"
+        },
+        body: JSON.stringify({ 
+          model: modelName, 
+          messages: [
+            { role: "system", content: `${SYSTEM_PROMPT}\nIMPORTANT: You MUST provide real-time data with verified source links (URLs) for every fact you state.` },
+            ...chatHistory,
+            { role: "user", content: userPrompt }
+          ] 
+        })
+      });
+      const data = await resp.json();
+      if (data.error) {
+        console.error(`Perplexity ${modelName} Error:`, data.error.message);
+        if (modelName.includes("128k")) return tryPerplexity("perplexity/llama-3-sonar-large-32k-online");
+        throw new Error(`Perplexity Error: ${data.error.message}`);
+      }
+      const text = data.choices?.[0]?.message?.content;
+      if (!text) throw new Error("Perplexity No Content");
+      return { text, provider: "Perplexity Sonar (Verified Search)" };
+    }
+
+    // 3. OPENROUTER (Claude 3.5 Sonnet)
     async function tryOpenRouter(modelName = "anthropic/claude-3.5-sonnet") {
       if (!keys.openRouter) throw new Error("No OpenRouter Key");
       console.log(`Trying OpenRouter ${modelName}...`);
@@ -141,7 +174,7 @@ export async function POST(req: Request) {
       if (data.error) {
         console.error(`OpenRouter ${modelName} Error:`, data.error.message);
         if (modelName.includes("beta")) throw new Error(data.error.message);
-        return tryOpenRouter("anthropic/claude-3.5-sonnet:beta"); // Try beta fallback
+        return tryOpenRouter("anthropic/claude-3.5-sonnet:beta"); 
       }
       const text = data.choices?.[0]?.message?.content;
       if (!text) throw new Error("OpenRouter No Content");
@@ -233,7 +266,7 @@ export async function POST(req: Request) {
     }
 
     // --- EXECUTION CHAIN ---
-    const providers = [
+    let providers = [
       tryGemini,
       tryOpenRouter,
       tryDeepSeek,
@@ -244,12 +277,9 @@ export async function POST(req: Request) {
       tryHF
     ];
 
-    // If PDF or Search, ensure Gemini is first
-    if (isPdf || isSearchNeeded) {
-      // Already first in list
-    } else {
-      // Re-order if needed, e.g. Claude first for reasoning
-      providers.unshift(providers.splice(1, 1)[0]); 
+    // Priority for Search: Perplexity first
+    if (isSearchNeeded) {
+      providers.unshift(tryPerplexity);
     }
 
     let lastError = null;
