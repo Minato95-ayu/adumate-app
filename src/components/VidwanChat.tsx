@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Send, User, Sparkles, Trash2, Loader2, Bot, Plus, X, Paperclip, FileText, ImageIcon, Menu, Search, Clock, MessageSquare, ChevronLeft } from "lucide-react";
 import Image from "next/image";
 import UserAvatar from "./UserAvatar";
+import BrandIcon from "./BrandIcon";
 
 interface Message {
   role: "user" | "assistant";
@@ -154,8 +155,8 @@ export default function VidwanChat() {
               {messages.map((m, i) => (
                 <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
                   <div className={`flex gap-4 w-full ${m.role === "user" ? "flex-row-reverse" : "flex-row"}`}>
-                    <div className={`w-10 h-10 md:w-12 md:h-12 flex items-center justify-center shrink-0 mt-2 ${m.role === "user" ? "" : "bg-slate-900 border border-white/10 p-2 rounded-2xl shadow-2xl"}`}>
-                    {m.role === "user" ? <UserAvatar name="Ayush Kaushik" /> : <Image src="/vidwan-logo-simple.svg" alt="V" width={32} height={32} />}
+                    <div className={`w-10 h-10 md:w-12 md:h-12 flex items-center justify-center shrink-0 mt-2`}>
+                    {m.role === "user" ? <UserAvatar name="Ayush Kaushik" /> : <BrandIcon text="V" size={48} />}
                   </div>
                     <div className="flex-1">
                       {m.filePreview && (

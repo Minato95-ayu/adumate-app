@@ -3,6 +3,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useEffect, useState } from "react";
 import { Globe, Mail, Phone, Download } from "lucide-react";
+import BrandIcon from "./BrandIcon";
 
 export default function Footer() {
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
@@ -30,9 +31,7 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-12">
           <div className="md:col-span-2">
             <Link href="/" className="flex items-center gap-3 mb-4 group">
-              <div className="w-10 h-10 rounded-xl overflow-hidden relative border border-white/10">
-                <Image src="/logo.png" alt="PI" fill className="object-cover" />
-              </div>
+              <BrandIcon text="P" size={40} />
               <span className="text-white font-black text-3xl tracking-tight drop-shadow-[0_0_15px_rgba(255,107,0,0.4)]">
                 Adu<span className="text-primary">mate</span>
               </span>
