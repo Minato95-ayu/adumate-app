@@ -64,6 +64,7 @@ export const metadata: Metadata = {
     description: "Find Libraries, Hostels, Tutors & AI Study Tools. Built for Indian students.",
     images: ["/og-image.png"],
     creator: "@adumate_app",
+    site: "@adumate_app",
   },
   icons: {
     icon: [
@@ -96,7 +97,8 @@ const jsonLd = {
       "@id": `${BASE_URL}/#website`,
       url: BASE_URL,
       name: "Adumate",
-      description: "India's #1 Student Ecosystem Platform",
+      alternateName: "Adumate India",
+      description: "Adumate is India's smartest student ecosystem platform connecting students with hostels, libraries, mess, and AI tools.",
       inLanguage: "en-IN",
       potentialAction: {
         "@type": "SearchAction",
@@ -109,23 +111,37 @@ const jsonLd = {
       "@id": `${BASE_URL}/#organization`,
       name: "Adumate",
       url: BASE_URL,
-      logo: { "@type": "ImageObject", url: `${BASE_URL}/favicon.svg` },
+      logo: { 
+        "@type": "ImageObject", 
+        "url": `${BASE_URL}/logo.png`,
+        "width": "512",
+        "height": "512"
+      },
+      image: { "@type": "ImageObject", "url": `${BASE_URL}/og-image.png` },
+      sameAs: [
+        "https://www.instagram.com/o_aa.yu_s/",
+        "https://twitter.com/adumate_app"
+      ],
       founder: {
         "@type": "Person",
         name: "Ayush Kaushik",
         sameAs: ["https://www.instagram.com/o_aa.yu_s/"],
       },
-      sameAs: ["https://www.instagram.com/o_aa.yu_s/"],
       description:
         "Adumate simplifies student life by connecting students with hostels, libraries, mess, tutors, and AI-powered study tools.",
+      brand: {
+        "@type": "Brand",
+        "name": "Adumate",
+        "alternateName": "Adumate App"
+      }
     },
     {
       "@type": "SoftwareApplication",
-      name: "Adumate",
-      operatingSystem: "Web",
-      applicationCategory: "EducationalApplication",
-      offers: { "@type": "Offer", price: "0", priceCurrency: "INR" },
-      aggregateRating: { "@type": "AggregateRating", ratingValue: "4.8", ratingCount: "500" },
+      "name": "Adumate",
+      "operatingSystem": "Web",
+      "applicationCategory": "EducationalApplication",
+      "offers": { "@type": "Offer", "price": "0", "priceCurrency": "INR" },
+      "aggregateRating": { "@type": "AggregateRating", "ratingValue": "4.8", "ratingCount": "500" },
     },
   ],
 };
