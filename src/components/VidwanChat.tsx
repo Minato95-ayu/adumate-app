@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send, User, Sparkles, Trash2, Loader2, Bot, Plus } from "lucide-react";
+import { Send, User, Sparkles, Trash2, Loader2, Bot, Plus, X } from "lucide-react";
 import Image from "next/image";
 
 interface Message {
@@ -14,7 +14,7 @@ export default function VidwanChat() {
   const [messages, setMessages] = useState<Message[]>([
     {
       role: "assistant",
-      content: "Namaste! I am Vidwan AI. How can I help you learn something new today?",
+      content: "Namaste! Main Vidwan hoon. Aaj aapko kya naya sikhna hai?",
     },
   ]);
   const [input, setInput] = useState("");
@@ -56,7 +56,7 @@ export default function VidwanChat() {
       console.error("Chat error:", error);
       setMessages((prev) => [
         ...prev,
-        { role: "assistant", content: "I encountered an error. Please try again later." },
+        { role: "assistant", content: "Main abhi connect nahi ho pa raha hoon. Ek baar phir try karein?" },
       ]);
     } finally {
       setIsLoading(false);
@@ -67,59 +67,74 @@ export default function VidwanChat() {
     setMessages([
       {
         role: "assistant",
-        content: "Memory cleared. How can I help you now?",
+        content: "Naya session start ho gaya hai. Puchiye jo aap chahien!",
       },
     ]);
   };
 
   return (
-    <div className="flex flex-col h-[80vh] w-full max-w-4xl mx-auto bg-[#0F172A] border border-white/5 rounded-3xl overflow-hidden shadow-2xl relative">
+    <div className="flex flex-col h-[85vh] w-full max-w-5xl mx-auto bg-[#0a0f1a] border border-white/10 rounded-[2rem] overflow-hidden shadow-[0_30px_100px_rgba(0,0,0,0.6)] relative">
       
-      {/* Clean Header */}
-      <div className="flex items-center justify-between px-6 py-4 border-b border-white/5 bg-slate-900/50">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center p-2">
-            <Image
-              src="/vidwan-logo-simple.svg"
-              alt="Vidwan"
-              width={32}
-              height={32}
-            />
+      {/* Premium Header */}
+      <div className="flex items-center justify-between px-8 py-6 border-b border-white/5 bg-slate-950/50 backdrop-blur-xl">
+        <div className="flex items-center gap-4">
+          <div className="relative group">
+            <div className="absolute inset-0 bg-primary/20 blur-lg rounded-full group-hover:bg-primary/40 transition-all"></div>
+            <div className="w-12 h-12 rounded-full bg-slate-900 border border-white/10 flex items-center justify-center p-2 relative z-10 overflow-hidden">
+               <Image
+                 src="/vidwan-logo-simple.svg"
+                 alt="Vidwan"
+                 width={36}
+                 height={36}
+                 className="object-contain"
+               />
+            </div>
           </div>
-          <h2 className="text-xl font-bold text-white tracking-tight">Vidwan AI</h2>
+          <div>
+            <h2 className="text-2xl font-black text-white tracking-tight">Vidwan AI</h2>
+            <div className="flex items-center gap-1.5 mt-0.5">
+               <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.6)]"></div>
+               <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Active Mentor</span>
+            </div>
+          </div>
         </div>
         <button 
           onClick={clearChat}
-          className="p-2 hover:bg-white/5 rounded-xl text-slate-500 hover:text-white transition-all"
+          className="p-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-2xl text-slate-400 hover:text-white transition-all group"
           title="Clear Chat"
         >
-          <Plus className="w-5 h-5 rotate-45" />
+          <X className="w-5 h-5 group-hover:rotate-90 transition-transform duration-300" />
         </button>
       </div>
 
-      {/* Minimal Messages Area */}
+      {/* Messages Area */}
       <div 
         ref={scrollRef}
-        className="flex-1 overflow-y-auto p-6 md:p-10 space-y-8 custom-scrollbar"
+        className="flex-1 overflow-y-auto p-6 md:p-12 space-y-10 custom-scrollbar bg-gradient-to-b from-transparent to-slate-900/20"
       >
         <AnimatePresence initial={false}>
           {messages.map((m, i) => (
             <motion.div
               key={i}
-              initial={{ opacity: 0, y: 10 }}
+              initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4 }}
               className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}
             >
-              <div className={`flex gap-4 max-w-[85%] ${m.role === "user" ? "flex-row-reverse" : "flex-row"}`}>
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 mt-1 ${
-                  m.role === "user" ? "bg-primary/20" : "bg-slate-800"
+              <div className={`flex gap-5 max-w-[85%] ${m.role === "user" ? "flex-row-reverse" : "flex-row"}`}>
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 mt-1 shadow-lg ${
+                  m.role === "user" ? "bg-gradient-to-br from-primary to-orange-600" : "bg-slate-800 border border-white/10 p-1.5"
                 }`}>
-                  {m.role === "user" ? <User size={16} className="text-primary" /> : <Bot size={16} className="text-slate-400" />}
+                  {m.role === "user" ? (
+                    <User size={20} className="text-white" />
+                  ) : (
+                    <Image src="/vidwan-logo-simple.svg" alt="V" width={28} height={28} className="object-contain" />
+                  )}
                 </div>
-                <div className={`p-4 md:p-5 rounded-2xl text-sm md:text-base leading-relaxed ${
+                <div className={`p-5 md:p-6 rounded-[1.5rem] text-sm md:text-lg leading-relaxed shadow-xl ${
                   m.role === "user" 
                     ? "bg-primary/10 text-white rounded-tr-none border border-primary/20" 
-                    : "bg-white/5 text-slate-200 rounded-tl-none border border-white/5"
+                    : "bg-white/5 text-slate-100 rounded-tl-none border border-white/10 backdrop-blur-md"
                 }`}>
                   {m.content}
                 </div>
@@ -129,37 +144,47 @@ export default function VidwanChat() {
         </AnimatePresence>
         
         {isLoading && (
-          <div className="flex gap-4 justify-start animate-pulse">
-            <div className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center">
-              <Loader2 size={14} className="animate-spin text-slate-500" />
+          <div className="flex gap-5 justify-start">
+            <div className="w-10 h-10 rounded-xl bg-slate-800 border border-white/10 flex items-center justify-center animate-pulse">
+               <Loader2 size={18} className="animate-spin text-slate-500" />
             </div>
-            <div className="h-12 w-32 bg-white/5 rounded-2xl rounded-tl-none border border-white/5" />
+            <div className="flex flex-col gap-2">
+               <div className="h-6 w-48 bg-white/5 rounded-xl animate-pulse" />
+               <div className="h-6 w-32 bg-white/5 rounded-xl animate-pulse opacity-50" />
+            </div>
           </div>
         )}
       </div>
 
-      {/* Minimal Input */}
-      <div className="p-6 md:p-8">
-        <div className="relative max-w-3xl mx-auto group">
+      {/* Input Area */}
+      <div className="p-8 md:p-12 border-t border-white/5 bg-slate-950/50">
+        <div className="relative max-w-4xl mx-auto">
           <input
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleSend()}
-            placeholder="Ask Vidwan..."
-            className="w-full bg-slate-800/50 border border-white/10 rounded-2xl px-6 py-4 text-white focus:outline-none focus:ring-1 focus:ring-primary/50 transition-all pr-14"
+            placeholder="Kuch puchiye Vidwan se..."
+            className="w-full bg-slate-900/80 border border-white/10 rounded-2xl px-8 py-5 text-lg text-white focus:outline-none focus:ring-2 focus:ring-primary/40 transition-all pr-20 shadow-inner"
           />
           <button
             onClick={handleSend}
             disabled={isLoading || !input.trim()}
-            className="absolute right-2 top-1/2 -translate-y-1/2 p-3 text-slate-400 hover:text-primary disabled:opacity-30 transition-all"
+            className="absolute right-3 top-1/2 -translate-y-1/2 bg-primary hover:bg-orange-500 disabled:opacity-30 disabled:grayscale text-white p-3.5 rounded-xl transition-all shadow-lg shadow-primary/20"
           >
-            <Send className="w-5 h-5" />
+            <Send className="w-6 h-6" />
           </button>
         </div>
-        <p className="text-center text-[10px] text-slate-600 mt-4 uppercase tracking-[0.2em] font-medium">
-          Powered by Adumate AI
-        </p>
+        <div className="mt-6 flex justify-center gap-8">
+           <div className="flex items-center gap-2">
+              <Sparkles size={14} className="text-primary" />
+              <span className="text-[10px] text-slate-500 font-black uppercase tracking-[0.2em]">Scholarly Logic</span>
+           </div>
+           <div className="flex items-center gap-2">
+              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+              <span className="text-[10px] text-slate-500 font-black uppercase tracking-[0.2em]">Verified Knowledge</span>
+           </div>
+        </div>
       </div>
     </div>
   );
