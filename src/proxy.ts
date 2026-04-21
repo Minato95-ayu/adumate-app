@@ -8,7 +8,7 @@ const RATE_LIMIT_WINDOW = 60 * 1000; // 1 minute
 const MAX_REQUESTS_PER_WINDOW = 50; // 50 requests per minute per IP
 
 export function proxy(request: NextRequest) {
-  const ip = request.ip || 'anonymous';
+  const ip = request.headers.get('x-forwarded-for')?.split(',')[0] || 'anonymous';
   const now = Date.now();
   
   // Dynamic Security Headers (Supplementing next.config.ts)
