@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
+import NavbarWrapper from "@/components/NavbarWrapper";
+import FooterWrapper from "@/components/FooterWrapper";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -170,9 +170,9 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
       </head>
       <body className={`${inter.className} min-h-screen bg-background text-foreground flex flex-col`}>
-        <Navbar />
+        <NavbarWrapper />
         <main className="flex-1">{children}</main>
-        <Footer />
+        <FooterWrapper />
       </body>
     </html>
   );
