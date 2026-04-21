@@ -142,8 +142,8 @@ export default function HomeClient() {
                 href="/vidwan"
                 className="flex items-center gap-4 bg-white/5 backdrop-blur-2xl border border-white/10 p-2 pr-6 rounded-[2rem] hover:bg-white/10 transition-all shadow-2xl"
               >
-                <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-primary/50 p-0.5">
-                  <Image src="/vidwan-char.png" alt="Vidwan" width={48} height={48} className="object-cover rounded-full" />
+                <div className="w-12 h-12 rounded-full overflow-hidden border border-primary/30 p-2 bg-primary/5">
+                  <Image src="/vidwan-logo-simple.svg" alt="Vidwan" width={32} height={32} className="object-contain" />
                 </div>
                 <div className="flex flex-col">
                   <span className="text-[10px] font-black text-primary uppercase tracking-widest">Live AI</span>
@@ -329,92 +329,37 @@ export default function HomeClient() {
         >
           <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-blue-500/10 to-primary/10 blur-[100px] rounded-full opacity-50 group-hover:opacity-80 transition-opacity" />
           
-          <div className="relative bg-slate-900/40 backdrop-blur-3xl border border-white/10 rounded-[3rem] p-8 md:p-12 overflow-hidden flex flex-col lg:flex-row items-center gap-12 shadow-[0_30px_100px_rgba(0,0,0,0.5)]">
-            {/* Animated Character Background */}
-            <div className="absolute top-0 right-0 w-full h-full pointer-events-none overflow-hidden opacity-20">
-               <div className="absolute top-[-20%] right-[-10%] w-[60%] h-[60%] bg-primary/20 blur-[120px] rounded-full animate-pulse" />
-            </div>
-
+          <div className="relative bg-slate-900/40 backdrop-blur-3xl border border-white/5 rounded-[3rem] p-8 md:p-16 overflow-hidden flex flex-col lg:flex-row items-center gap-12 shadow-2xl">
+            
             <div className="w-full lg:w-1/2 relative z-10">
-              <div className="inline-flex items-center gap-3 px-5 py-2 rounded-full bg-orange-500/10 border border-orange-500/30 text-orange-400 mb-6 text-sm font-black uppercase tracking-widest shadow-lg shadow-orange-500/10">
-                <Sparkles size={16} /> Advanced Jarvis Intelligence
+              <div className="inline-flex items-center gap-3 px-5 py-2 rounded-full bg-primary/5 border border-primary/10 text-primary mb-6 text-xs font-bold uppercase tracking-widest">
+                <Sparkles size={14} /> Scholarly AI Assistant
               </div>
               <h2 className="text-4xl md:text-6xl font-black text-white mb-6 leading-tight">
-                Meet <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-orange-400">Vidwan</span>,<br/>
-                Your Digital Mentor.
+                Vidwan <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-orange-400">AI</span>
               </h2>
-              <p className="text-lg md:text-xl text-slate-300 mb-8 leading-relaxed">
-                Adumate ka sabse smart assistant. Whether it's complex physics laws, JEE prep, or just app help—Vidwan is here to explain it all in Hinglish.
+              <p className="text-lg md:text-xl text-slate-400 mb-8 leading-relaxed">
+                Adumate's digital scholar is here to help you understand topics, find resources, and prepare for exams. Direct and simple explanations in your language.
               </p>
               
-              <div className="flex flex-wrap gap-4">
-                <Link 
-                  href="/vidwan"
-                  className="bg-primary hover:bg-orange-500 text-white font-black px-10 py-5 rounded-2xl transition-all shadow-xl shadow-primary/20 flex items-center gap-3 text-lg group/btn"
-                >
-                  <MessageSquare /> Chat With Vidwan
-                  <ChevronRight className="group-hover/btn:translate-x-1 transition-transform" />
-                </Link>
-                <div className="flex -space-x-3 items-center ml-2">
-                   {[1,2,3,4].map(i => (
-                     <div key={i} className="w-10 h-10 rounded-full border-2 border-slate-900 overflow-hidden bg-slate-800">
-                        <Image src={`/founder.jpg`} alt="User" width={40} height={40} className="grayscale brightness-150 opacity-50" />
-                     </div>
-                   ))}
-                   <span className="ml-6 text-xs text-slate-500 font-bold uppercase tracking-widest">Used by 5k+ Students</span>
-                </div>
-              </div>
+              <Link 
+                href="/vidwan"
+                className="bg-primary hover:bg-orange-500 text-white font-bold px-10 py-5 rounded-2xl transition-all shadow-xl shadow-primary/10 inline-flex items-center gap-3 text-lg"
+              >
+                Start Chatting →
+              </Link>
             </div>
 
-            <div className="w-full lg:w-1/2 relative">
-              <motion.div
-                animate={{ 
-                  y: [0, -20, 0],
-                  rotateY: [-5, 5, -5]
-                }}
-                transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
-                className="relative z-10 flex justify-center"
-              >
-                <div className="relative w-72 h-72 md:w-[450px] md:h-[450px]">
-                   <div className="absolute inset-0 bg-primary blur-[80px] opacity-20 rounded-full scale-75 animate-pulse" />
-                   <Image 
-                    src="/vidwan-char.png" 
-                    alt="Vidwan AI Character" 
-                    fill 
-                    className="object-contain drop-shadow-[0_20px_50px_rgba(255,107,0,0.5)]"
-                    priority
-                   />
-                </div>
-              </motion.div>
-              
-              {/* Floating UI Badges */}
-              <motion.div 
-                animate={{ x: [0, 10, 0], y: [0, -10, 0] }}
-                transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-                className="absolute top-10 left-0 bg-slate-900/80 backdrop-blur-xl border border-white/10 p-4 rounded-2xl shadow-2xl z-20 flex items-center gap-3"
-              >
-                <div className="w-10 h-10 bg-green-500/20 rounded-xl flex items-center justify-center text-green-400">
-                   <Zap size={20} />
-                </div>
-                <div>
-                   <p className="text-[10px] font-black text-slate-500 uppercase tracking-tighter">Response Time</p>
-                   <p className="text-sm font-bold text-white">0.8 Seconds</p>
-                </div>
-              </motion.div>
-
-              <motion.div 
-                animate={{ x: [0, -10, 0], y: [0, 15, 0] }}
-                transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 1 }}
-                className="absolute bottom-10 right-0 bg-slate-900/80 backdrop-blur-xl border border-white/10 p-4 rounded-2xl shadow-2xl z-20 flex items-center gap-3"
-              >
-                <div className="w-10 h-10 bg-blue-500/20 rounded-xl flex items-center justify-center text-blue-400">
-                   <Globe size={20} />
-                </div>
-                <div>
-                   <p className="text-[10px] font-black text-slate-500 uppercase tracking-tighter">Multilingual</p>
-                   <p className="text-sm font-bold text-white">Hinglish Native</p>
-                </div>
-              </motion.div>
+            <div className="w-full lg:w-1/2 flex justify-center">
+              <div className="relative w-64 h-64 md:w-80 md:h-80 bg-primary/5 rounded-full flex items-center justify-center border border-primary/10">
+                <Image 
+                  src="/vidwan-logo-simple.svg" 
+                  alt="Vidwan AI" 
+                  width={180} 
+                  height={180} 
+                  className="opacity-80"
+                />
+              </div>
             </div>
           </div>
         </motion.div>
