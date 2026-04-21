@@ -45,7 +45,7 @@ const formatMessage = (text: string) => {
 
 export default function VidwanChat() {
   const [messages, setMessages] = useState<Message[]>([
-    { role: "assistant", content: "Namaste! Main Vidwan AI hoon. Aaj kis topic par multitasking karein?" },
+    { role: "assistant", content: "Namaste! Main Vidwan AI hoon. Aaj hum kis topic par multitasking karein?" },
   ]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -58,6 +58,14 @@ export default function VidwanChat() {
   useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
   }, [messages]);
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onloadend = () => setSelectedFile({ data: reader.result as string, type: file.type, name: file.name });
+    reader.readAsDataURL(file);
+  };
 
   const handleSend = async () => {
     if ((!input.trim() && !selectedFile) || isLoading) return;
@@ -85,7 +93,7 @@ export default function VidwanChat() {
       if (data.error) throw new Error(data.error);
       setMessages((prev) => [...prev, { role: "assistant", content: data.text, provider: data.provider }]);
     } catch (error: any) {
-      setMessages((prev) => [...prev, { role: "assistant", content: "Something went wrong." }]);
+      setMessages((prev) => [...prev, { role: "assistant", content: `Connection Error: ${error.message || "Please check API keys in production."}` }]);
     } finally {
       setIsLoading(false);
     }
@@ -93,8 +101,7 @@ export default function VidwanChat() {
 
   return (
     <div className="flex h-screen w-full bg-[#0a0f1a] overflow-hidden">
-      
-      {/* Sidebar (ChatGPT Style) */}
+      {/* Sidebar */}
       <motion.div 
         initial={false}
         animate={{ width: isSidebarOpen ? 280 : 0, opacity: isSidebarOpen ? 1 : 0 }}
@@ -105,13 +112,12 @@ export default function VidwanChat() {
               <Plus size={18} />
               <span className="text-sm font-bold">New chat</span>
            </button>
-           
-           <div className="flex-1 space-y-6">
+           <div className="flex-1 overflow-y-auto space-y-6 custom-scrollbar">
               <div>
                  <p className="px-3 text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3">Recents</p>
                  <div className="space-y-1">
                     {["Academic Help", "Python Project", "Hostel Query"].map((chat, i) => (
-                      <button key={i} className="flex items-center gap-3 w-full p-2.5 px-3 rounded-lg hover:bg-white/5 text-slate-400 hover:text-white text-sm transition-all text-left">
+                      <button key={i} className="flex items-center gap-3 w-full p-2.5 px-3 rounded-lg hover:bg-white/5 text-slate-400 hover:text-white text-sm transition-all text-left truncate">
                         <MessageSquare size={14} />
                         <span className="truncate">{chat}</span>
                       </button>
@@ -119,34 +125,28 @@ export default function VidwanChat() {
                  </div>
               </div>
            </div>
-
            <div className="mt-auto pt-4 border-t border-white/5">
-              <button className="flex items-center gap-3 w-full p-3 rounded-xl hover:bg-white/5 text-slate-400 hover:text-white transition-all">
+              <div className="p-3 rounded-xl bg-white/5 text-slate-400 flex items-center gap-3">
                  <User size={18} />
-                 <span className="text-sm font-bold">Ayush Kaushik</span>
-              </button>
+                 <span className="text-xs font-bold truncate">Adumate User</span>
+              </div>
            </div>
         </div>
       </motion.div>
 
-      {/* Main Content Area */}
+      {/* Main Content */}
       <div className="flex-1 flex flex-col relative h-full">
-        
-        {/* Slim Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-white/5 bg-slate-900/20 backdrop-blur-3xl z-20">
           <div className="flex items-center gap-4">
             <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="p-2 hover:bg-white/5 rounded-lg text-slate-400 md:block hidden"><Menu size={20} /></button>
             <div className="flex items-center gap-2">
                <h2 className="text-lg font-bold text-white tracking-tight">Vidwan AI</h2>
-               <div className="px-2 py-0.5 rounded-full bg-primary/10 border border-primary/20 text-[9px] font-black text-primary uppercase tracking-tighter">Pro</div>
+               <div className="px-2 py-0.5 rounded-full bg-primary/10 border border-primary/20 text-[9px] font-black text-primary uppercase tracking-tighter">Unified</div>
             </div>
           </div>
-          <div className="flex items-center gap-3">
-             <button onClick={() => window.history.back()} className="p-2 hover:bg-white/5 rounded-lg text-slate-500"><X size={20} /></button>
-          </div>
+          <button onClick={() => window.history.back()} className="p-2 hover:bg-white/5 rounded-lg text-slate-500"><X size={20} /></button>
         </div>
 
-        {/* Chat Messages */}
         <div ref={scrollRef} className="flex-1 overflow-y-auto px-6 md:px-0 py-10 md:py-16 custom-scrollbar scroll-smooth">
           <div className="max-w-3xl mx-auto space-y-8">
             <AnimatePresence initial={false}>
@@ -162,15 +162,11 @@ export default function VidwanChat() {
                           <Image src={m.filePreview} alt="Attached" fill className="object-cover" />
                         </div>
                       )}
-                      <div className={`text-base md:text-lg leading-relaxed ${m.role === "user" ? "text-slate-300 text-right bg-white/5 p-4 rounded-2xl rounded-tr-none inline-block ml-auto float-right" : "text-slate-200"}`}>
+                      <div className={`text-base md:text-lg leading-relaxed ${m.role === "user" ? "text-slate-300 text-right bg-white/5 p-4 rounded-2xl rounded-tr-none inline-block ml-auto float-right shadow-xl" : "text-slate-200"}`}>
                         {m.role === "assistant" ? formatMessage(m.content) : m.content}
                       </div>
                       <div className="clear-both"></div>
-                      {m.provider && (
-                        <div className="text-[9px] text-slate-600 font-bold uppercase tracking-[0.2em] mt-2">
-                           Intelligence: {m.provider}
-                        </div>
-                      )}
+                      {m.provider && <div className="text-[9px] text-slate-600 font-bold uppercase tracking-[0.2em] mt-2 italic">Brain: {m.provider}</div>}
                     </div>
                   </div>
                 </motion.div>
@@ -185,7 +181,7 @@ export default function VidwanChat() {
           </div>
         </div>
 
-        {/* Input Bar (Clean GPT Style) */}
+        {/* Input */}
         <div className="px-6 md:px-0 pb-8 pt-4">
           <div className="max-w-3xl mx-auto">
             {selectedFile && (
@@ -197,25 +193,12 @@ export default function VidwanChat() {
                 <button onClick={() => setSelectedFile(null)} className="p-1 hover:bg-red-500/20 text-red-400 rounded-lg"><X size={14} /></button>
               </motion.div>
             )}
-
-            <div className="relative bg-slate-900/50 border border-white/10 rounded-2xl p-2 flex items-center gap-2 shadow-2xl focus-within:border-primary/30 transition-all">
+            <div className="relative bg-slate-900/50 border border-white/10 rounded-2xl p-2 flex items-center gap-2 shadow-2xl focus-within:border-primary/30 transition-all backdrop-blur-xl">
               <input type="file" ref={fileInputRef} onChange={handleFileSelect} className="hidden" accept="image/*,application/pdf" />
               <button onClick={() => fileInputRef.current?.click()} className="p-3 hover:bg-white/5 text-slate-500 hover:text-white rounded-xl transition-all shrink-0"><Paperclip size={20} /></button>
-              
-              <input 
-                type="text" 
-                value={input} 
-                onChange={(e) => setInput(e.target.value)} 
-                onKeyDown={(e) => e.key === "Enter" && handleSend()} 
-                placeholder="Ask anything..." 
-                className="flex-1 bg-transparent border-none px-2 py-3 text-base md:text-lg text-white focus:outline-none placeholder:text-slate-600" 
-              />
-              
-              <button onClick={handleSend} disabled={isLoading || (!input.trim() && !selectedFile)} className="bg-white text-black hover:bg-slate-200 disabled:opacity-20 p-2.5 rounded-xl transition-all shrink-0">
-                <Send size={20} />
-              </button>
+              <input type="text" value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && handleSend()} placeholder="Ask anything..." className="flex-1 bg-transparent border-none px-2 py-3 text-base md:text-lg text-white focus:outline-none placeholder:text-slate-600" />
+              <button onClick={handleSend} disabled={isLoading || (!input.trim() && !selectedFile)} className="bg-white text-black hover:bg-slate-200 disabled:opacity-20 p-2.5 rounded-xl transition-all shrink-0 shadow-lg shadow-white/5"><Send size={20} /></button>
             </div>
-            <p className="text-center text-[9px] text-slate-700 mt-4 tracking-widest font-bold">Vidwan can make mistakes. Verify important info.</p>
           </div>
         </div>
       </div>
