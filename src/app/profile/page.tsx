@@ -4,6 +4,7 @@ import { auth, db } from "@/lib/firebase";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { User, GraduationCap, Building, Clock, CreditCard, Save, CheckCircle } from "lucide-react";
+import UserAvatar from "@/components/UserAvatar";
 import { motion } from "framer-motion";
 
 export default function ProfilePage() {
@@ -85,9 +86,7 @@ export default function ProfilePage() {
           className="bg-card/80 backdrop-blur-xl border border-white/10 rounded-3xl p-8 shadow-2xl"
         >
           <div className="flex items-center gap-4 mb-8">
-            <div className="w-16 h-16 bg-primary/20 text-primary rounded-2xl flex items-center justify-center shadow-lg shadow-primary/20">
-              <User size={32} />
-            </div>
+            <UserAvatar name={name || "User"} size="lg" className="rounded-2xl shadow-xl shadow-primary/10" />
             <div>
               <h1 className="text-3xl font-bold text-white">Your Profile</h1>
               <p className="text-muted capitalize">Role: {userData?.role}</p>

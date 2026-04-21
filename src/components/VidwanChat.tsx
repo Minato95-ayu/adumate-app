@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Send, User, Sparkles, Trash2, Loader2, Bot, Plus, X, Paperclip, FileText, ImageIcon, Menu, Search, Clock, MessageSquare, ChevronLeft } from "lucide-react";
 import Image from "next/image";
+import UserAvatar from "./UserAvatar";
 
 interface Message {
   role: "user" | "assistant";
@@ -127,8 +128,8 @@ export default function VidwanChat() {
            </div>
            <div className="mt-auto pt-4 border-t border-white/5">
               <div className="p-3 rounded-xl bg-white/5 text-slate-400 flex items-center gap-3">
-                 <User size={18} />
-                 <span className="text-xs font-bold truncate">Adumate User</span>
+                 <UserAvatar name="Ayush Kaushik" size="sm" />
+                 <span className="text-xs font-bold truncate">Ayush Kaushik</span>
               </div>
            </div>
         </div>
@@ -153,9 +154,9 @@ export default function VidwanChat() {
               {messages.map((m, i) => (
                 <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
                   <div className={`flex gap-4 w-full ${m.role === "user" ? "flex-row-reverse" : "flex-row"}`}>
-                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mt-1 shadow-lg ${m.role === "user" ? "bg-primary/20" : "bg-slate-900 border border-white/10 p-1"}`}>
-                      {m.role === "user" ? <User size={16} className="text-primary" /> : <Image src="/vidwan-logo-simple.svg" alt="V" width={24} height={24} />}
-                    </div>
+                    <div className={`w-10 h-10 md:w-12 md:h-12 flex items-center justify-center shrink-0 mt-2 ${m.role === "user" ? "" : "bg-slate-900 border border-white/10 p-2 rounded-2xl shadow-2xl"}`}>
+                    {m.role === "user" ? <UserAvatar name="Ayush Kaushik" /> : <Image src="/vidwan-logo-simple.svg" alt="V" width={32} height={32} />}
+                  </div>
                     <div className="flex-1">
                       {m.filePreview && (
                         <div className="mb-4 relative w-64 aspect-video rounded-xl overflow-hidden border border-white/10 shadow-xl">
