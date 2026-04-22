@@ -55,19 +55,20 @@ export default function Footer() {
           <div>
             <h3 className="font-bold text-white mb-6">Platform</h3>
             <ul className="space-y-3 text-sm text-muted/80">
-              <li><Link href="/login?role=student" className="hover:text-primary transition-colors">Join as Student</Link></li>
-              <li><Link href="/login?role=partner" className="hover:text-primary transition-colors">Partner with Us</Link></li>
-              <li><Link href="#" className="hover:text-primary transition-colors">Browse Services</Link></li>
+              <li><Link href="/register" className="hover:text-primary transition-colors">Join as Student</Link></li>
+              <li><Link href="/register-provider" className="hover:text-primary transition-colors">Partner with Us</Link></li>
+              <li><Link href="/search" className="hover:text-primary transition-colors">Browse Services</Link></li>
+              <li><Link href="/map" className="hover:text-primary transition-colors">Finder Map</Link></li>
             </ul>
           </div>
           
           <div>
             <h3 className="font-bold text-white mb-6">Support</h3>
             <ul className="space-y-3 text-sm text-muted/80">
-              <li><Link href="#" className="hover:text-primary transition-colors">Help Center</Link></li>
-              <li><Link href="#" className="hover:text-primary transition-colors">Terms of Service</Link></li>
-              <li><Link href="#" className="hover:text-primary transition-colors">Privacy Policy</Link></li>
-              <li><Link href="#" className="hover:text-primary transition-colors">Contact Us</Link></li>
+              <li><Link href="/services" className="hover:text-primary transition-colors">Help Center</Link></li>
+              <li><Link href="/services" className="hover:text-primary transition-colors">Terms of Service</Link></li>
+              <li><Link href="/services" className="hover:text-primary transition-colors">Privacy Policy</Link></li>
+              <li><Link href="/partner" className="hover:text-primary transition-colors">Contact Us</Link></li>
             </ul>
           </div>
         </div>

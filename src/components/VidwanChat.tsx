@@ -264,7 +264,7 @@ export default function VidwanChat() {
         </div>
 
         {/* Input */}
-        <div className="px-6 md:px-0 pb-8 pt-4">
+        <div className="px-6 md:px-0 pb-4 pt-4">
           <div className="max-w-3xl mx-auto">
             {selectedFile && (
               <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mb-4 inline-flex items-center gap-3 p-3 bg-white/5 border border-white/10 rounded-xl shadow-xl">
@@ -281,6 +281,11 @@ export default function VidwanChat() {
               <input type="text" value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && handleSend()} placeholder="Ask anything..." className="flex-1 bg-transparent border-none px-2 py-3 text-base md:text-lg text-white focus:outline-none placeholder:text-slate-600" />
               <button onClick={handleSend} disabled={isLoading || (!input.trim() && !selectedFile)} className="bg-white text-black hover:bg-slate-200 disabled:opacity-20 p-2.5 rounded-xl transition-all shrink-0 shadow-lg shadow-white/5"><Send size={20} /></button>
             </div>
+            
+            {/* Disclaimer */}
+            <p className="text-center text-[10px] text-slate-500 mt-4 font-medium">
+              Vidwan AI can make mistakes. Check important info.
+            </p>
           </div>
         </div>
       </div>
