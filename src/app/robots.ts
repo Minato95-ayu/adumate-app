@@ -1,15 +1,23 @@
 import { MetadataRoute } from "next";
 
 export default function robots(): MetadataRoute.Robots {
+  const BASE_URL = "https://www.adumate.in";
+
   return {
     rules: [
       {
         userAgent: "*",
-        allow: ["/", "/dashboard", "/test", "/search", "/login", "/partner", "/map"],
-        disallow: ["/admin", "/api/", "/_next/", "/profile/", "/test/"],
+        allow: ["/", "/blog/", "/services/", "/map/", "/search/"],
+        disallow: ["/admin/", "/api/", "/_next/", "/profile/"],
       },
+      {
+        userAgent: "Googlebot",
+        allow: "/",
+        disallow: ["/admin/", "/api/"],
+      }
     ],
-    sitemap: "https://www.adumate.in/sitemap.xml",
-    host: "https://www.adumate.in",
+    sitemap: `${BASE_URL}/sitemap.xml`,
+    host: BASE_URL,
   };
 }
+
