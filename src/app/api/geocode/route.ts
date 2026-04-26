@@ -68,10 +68,7 @@ async function geocodeOsm(city: string) {
 }
 
 export async function GET(req: NextRequest) {
-  const auth = await verifyAuth(req);
-  if ("error" in auth) {
-    return NextResponse.json({ error: auth.error }, { status: auth.status });
-  }
+  // Public endpoint — no auth required for geocoding
 
   const city = new URL(req.url).searchParams.get("city");
   if (!city) return NextResponse.json({ error: "city required" }, { status: 400 });

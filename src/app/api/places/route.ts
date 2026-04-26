@@ -143,10 +143,8 @@ async function fetchFromOsm(lat: string, lon: string, category: string, radius: 
 }
 
 export async function GET(req: NextRequest) {
-  const auth = await verifyAuth(req);
-  if ("error" in auth) {
-    return NextResponse.json({ error: auth.error }, { status: auth.status });
-  }
+  // Allow public access — auth is optional for map browsing
+  // (verifyAuth kept for reference; not enforced here)
 
   const { searchParams } = new URL(req.url);
   const lat = searchParams.get("lat");
