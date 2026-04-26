@@ -63,7 +63,13 @@ export default function MapClient() {
           lat: p.lat,
           lng: p.lon,
           photo: PHOTOS[i % PHOTOS.length],
-          social: { whatsapp: p.phone || "9100000000" },
+          about: "Premium student facility providing high-speed WiFi, 24/7 power backup, and regular maintenance. Highly rated by students.",
+          services: ["High-Speed WiFi", "AC/Non-AC", "RO Water", "CCTV Security"],
+          social: { 
+            whatsapp: p.phone || "9100000000",
+            instagram: "adumate_app",
+            linkedin: "adumate"
+          },
         })));
       }
     } catch {
@@ -385,6 +391,35 @@ export default function MapClient() {
                     <p className="text-sm font-black text-white">{cat.icon} {cat.label}</p>
                   </div>
                 </div>
+
+                {/* Rich Data Section */}
+                <div className="mb-4 bg-white/[0.02] p-3 rounded-xl border border-white/[0.05]">
+                  <h3 className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-1.5">About</h3>
+                  <p className="text-xs text-slate-300 leading-relaxed mb-3">{selectedPlace.about}</p>
+                  
+                  <h3 className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Services</h3>
+                  <div className="flex flex-wrap gap-1.5">
+                    {selectedPlace.services?.map((s: string, idx: number) => (
+                      <span key={idx} className="px-2 py-1 bg-white/5 border border-white/10 rounded-md text-[10px] font-bold text-white">
+                        {s}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="flex gap-2 mb-4">
+                  {selectedPlace.social?.instagram && (
+                    <a href={`https://instagram.com/${selectedPlace.social.instagram}`} target="_blank" className="flex-1 py-2 bg-gradient-to-r from-[#833AB4] via-[#FD1D1D] to-[#F56040] rounded-xl text-center text-xs font-black text-white transition-opacity hover:opacity-80">
+                      Instagram
+                    </a>
+                  )}
+                  {selectedPlace.social?.linkedin && (
+                    <a href={`https://linkedin.com/in/${selectedPlace.social.linkedin}`} target="_blank" className="flex-1 py-2 bg-[#0077b5] rounded-xl text-center text-xs font-black text-white transition-opacity hover:opacity-80">
+                      LinkedIn
+                    </a>
+                  )}
+                </div>
+
                 {selectedPlace.phone && (
                   <a href={`tel:${selectedPlace.phone}`}
                     className="block w-full py-3 rounded-xl text-center text-sm font-black text-white mb-2 transition-opacity hover:opacity-80"
