@@ -1,198 +1,319 @@
 "use client";
-import { useState, useRef, useEffect, useCallback } from "react";
-import Map, { Marker, Popup, NavigationControl, FullscreenControl, GeolocateControl, Layer, Source } from "react-map-gl";
-import "mapbox-gl/dist/mapbox-gl.css";
-import { Star, MapPin, Navigation, MessageCircle } from "lucide-react";
+
+import { useEffect, useMemo, useState } from "react";
+import {
+  MapContainer,
+  Marker,
+  Popup,
+  TileLayer,
+  useMap,
+  Polyline,
+  CircleMarker,
+} from "react-leaflet";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
+import { MapPin, Phone, Globe } from "lucide-react";
 import { Provider } from "@/data/providers";
 
-interface MapboxProps {
-  providers: Provider[];
-  center?: { lat: number; lng: number };
-  onScan?: () => void;
+type Place = Provider & {
+  phone?: string;
+  website?: string;
+  about?: string;
+  services?: string[];
+  social?: Provider["social"] & {
+    linkedin?: string;
+    facebook?: string;
+    justdial?: string;
+  };
+};
+
+interface RouteSummary {
+  distanceKm: number;
+  durationMin: number;
 }
 
-export default function MapboxMap({ providers, center = { lat: 28.6139, lng: 77.2090 }, onScan }: MapboxProps) {
-  const [selectedPlace, setSelectedPlace] = useState<Provider | null>(null);
-  const [viewState, setViewState] = useState({
-    latitude: center.lat,
-    longitude: center.lng,
-    zoom: 14,
-    pitch: 60, // 3D Pitch
-    bearing: -20, // Angled for premium 3D look
-  });
-  
-  const mapRef = useRef<any>(null);
+interface MapProps {
+  providers: Place[];
+  center?: { lat: number; lng: number };
+  onScan?: () => void;
+  selectedPlace?: Place | null;
+  onSelectPlace?: (place: Place | null) => void;
+}
+
+const userMarker = L.divIcon({
+  html: `
+    <div style="width:18px;height:18px;border-radius:999px;background:#2563eb;border:3px solid #ffffff;box-shadow:0 0 0 8px rgba(37,99,235,0.18);"></div>
+  `,
+  className: "",
+  iconSize: [18, 18],
+  iconAnchor: [9, 9],
+});
+
+const placeMarker = L.divIcon({
+  html: `
+    <div style="display:flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:16px;background:linear-gradient(135deg,#f97316,#ef4444);border:3px solid rgba(255,255,255,0.95);box-shadow:0 10px 25px rgba(249,115,22,0.35);color:white;font-weight:800;font-size:14px;">A</div>
+  `,
+  className: "",
+  iconSize: [34, 34],
+  iconAnchor: [17, 34],
+  popupAnchor: [0, -28],
+});
+
+function RecenterMap({
+  center,
+  selectedPlace,
+  routePoints,
+}: {
+  center: { lat: number; lng: number };
+  selectedPlace: Place | null | undefined;
+  routePoints: [number, number][];
+}) {
+  const map = useMap();
 
   useEffect(() => {
-    setViewState(prev => ({
-      ...prev,
-      latitude: center.lat,
-      longitude: center.lng
-    }));
-  }, [center]);
+    if (routePoints.length > 1) {
+      map.fitBounds(routePoints, { padding: [50, 50] });
+      return;
+    }
 
-  const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
+    if (selectedPlace) {
+      map.flyTo([selectedPlace.lat, selectedPlace.lng], 15, { duration: 0.8 });
+      return;
+    }
 
-  if (!MAPBOX_TOKEN || !MAPBOX_TOKEN.startsWith("pk.")) {
-    return (
-      <div className="h-full w-full bg-[#0d1117] flex flex-col items-center justify-center p-8 text-center rounded-[2.5rem] border border-white/10 shadow-2xl">
-        <div className="w-20 h-20 mb-6 bg-gradient-to-br from-orange-500 to-pink-500 rounded-3xl flex items-center justify-center shadow-2xl shadow-orange-500/20">
-          <MapPin size={40} className="text-white" />
+    map.flyTo([center.lat, center.lng], 13, { duration: 0.8 });
+  }, [center, map, routePoints, selectedPlace]);
+
+  return null;
+}
+
+function RouteSummaryPill({
+  summary,
+  loading,
+  error,
+  onRefresh,
+}: {
+  summary: RouteSummary | null;
+  loading: boolean;
+  error: string;
+  onRefresh?: () => void;
+}) {
+  if (!summary && !loading && !error) return null;
+
+  return (
+    <div className="absolute left-1/2 top-4 z-[500] w-[min(92vw,420px)] -translate-x-1/2 rounded-2xl border border-white/10 bg-[#08101c]/92 px-4 py-3 text-white shadow-2xl backdrop-blur-xl">
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">
+            Smart Route
+          </p>
+          {loading && <p className="text-sm font-semibold text-slate-200">Finding best route...</p>}
+          {!loading && error && <p className="text-sm font-semibold text-rose-300">{error}</p>}
+          {!loading && summary && (
+            <p className="text-sm font-semibold text-slate-100">
+              {summary.distanceKm.toFixed(1)} km • {summary.durationMin.toFixed(0)} min drive
+            </p>
+          )}
         </div>
-        <h2 className="text-3xl font-black text-white mb-4 tracking-tight">Premium 3D Map Ready</h2>
-        <p className="text-slate-400 max-w-md mx-auto mb-8 leading-relaxed">
-          The code for high-end Mapbox 3D routing and data rendering is installed and ready. To activate the map, please add your free Mapbox API key to your environment variables.
-        </p>
-        <div className="bg-[#0a0f1a] p-4 rounded-2xl border border-white/5 inline-block text-left w-full max-w-lg">
-          <p className="text-xs font-bold text-slate-500 mb-2 uppercase tracking-widest">Add to .env.local</p>
-          <code className="text-orange-400 font-mono text-sm break-all">
-            NEXT_PUBLIC_MAPBOX_TOKEN="pk.eyJ1...your_token"
-          </code>
-        </div>
+        {onRefresh && (
+          <button
+            onClick={onRefresh}
+            className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-bold text-slate-200 transition hover:bg-white/10"
+          >
+            Refresh
+          </button>
+        )}
       </div>
-    );
-  }
+    </div>
+  );
+}
 
-  // 3D Building Layer config
-  const skyLayer: any = {
-    id: 'sky',
-    type: 'sky',
-    paint: {
-      'sky-type': 'atmosphere',
-      'sky-atmosphere-sun': [0.0, 0.0],
-      'sky-atmosphere-sun-intensity': 15
+function ensureUrl(value?: string) {
+  if (!value) return "";
+  return /^https?:\/\//i.test(value) ? value : `https://${value}`;
+}
+
+export default function Map({
+  providers,
+  center = { lat: 28.6139, lng: 77.209 },
+  onScan,
+  selectedPlace,
+  onSelectPlace,
+}: MapProps) {
+  const [routePoints, setRoutePoints] = useState<[number, number][]>([]);
+  const [routeSummary, setRouteSummary] = useState<RouteSummary | null>(null);
+  const [routeLoading, setRouteLoading] = useState(false);
+  const [routeError, setRouteError] = useState("");
+
+  const routeTarget = selectedPlace ?? null;
+
+  const routeUrl = useMemo(() => {
+    if (!routeTarget) return "";
+    return `/api/route?start=${center.lng},${center.lat}&end=${routeTarget.lng},${routeTarget.lat}`;
+  }, [center.lat, center.lng, routeTarget]);
+
+  const loadRoute = async () => {
+    if (!routeUrl) {
+      setRoutePoints([]);
+      setRouteSummary(null);
+      setRouteError("");
+      return;
+    }
+
+    setRouteLoading(true);
+    setRouteError("");
+
+    try {
+      const response = await fetch(routeUrl);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to fetch route");
+      }
+
+      const feature = data?.features?.[0];
+      const coordinates = feature?.geometry?.coordinates;
+      const summary = feature?.properties?.summary;
+
+      if (!Array.isArray(coordinates) || coordinates.length < 2) {
+        throw new Error("Route not available for this place");
+      }
+
+      setRoutePoints(
+        coordinates.map((point: [number, number]) => [point[1], point[0]])
+      );
+      setRouteSummary({
+        distanceKm: Number(summary?.distance || 0) / 1000,
+        durationMin: Number(summary?.duration || 0) / 60,
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Could not load route";
+      setRoutePoints([]);
+      setRouteSummary(null);
+      setRouteError(message);
+    } finally {
+      setRouteLoading(false);
     }
   };
 
+  useEffect(() => {
+    queueMicrotask(() => {
+      void loadRoute();
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [routeUrl]);
+
   return (
-    <div className="h-full w-full relative rounded-[2.5rem] overflow-hidden border border-white/10 shadow-2xl bg-[#0a0f1a]">
-      <Map
-        {...viewState}
-        ref={mapRef}
-        onMove={evt => setViewState(evt.viewState)}
-        mapStyle="mapbox://styles/mapbox/dark-v11"
-        mapboxAccessToken={MAPBOX_TOKEN}
-        attributionControl={false}
-        terrain={{ source: 'mapbox-dem', exaggeration: 1.5 }}
+    <div className="relative h-full w-full overflow-hidden rounded-[2rem] border border-white/10 bg-[#08101c] shadow-2xl">
+      <MapContainer
+        center={[center.lat, center.lng]}
+        zoom={13}
+        scrollWheelZoom
+        className="h-full w-full"
+        zoomControl={false}
       >
-        <Source
-          id="mapbox-dem"
-          type="raster-dem"
-          url="mapbox://mapbox.mapbox-terrain-dem-v1"
-          tileSize={512}
-          maxzoom={14}
-        />
-        <Layer {...skyLayer} />
-        
-        {/* 3D Buildings */}
-        <Layer
-          id="3d-buildings"
-          source="composite"
-          source-layer="building"
-          filter={['==', 'extrude', 'true']}
-          type="fill-extrusion"
-          minzoom={15}
-          paint={{
-            'fill-extrusion-color': '#1E293B',
-            'fill-extrusion-height': ['get', 'height'],
-            'fill-extrusion-base': ['get', 'min_height'],
-            'fill-extrusion-opacity': 0.8
-          }}
+        <TileLayer
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
 
-        <GeolocateControl position="bottom-right" />
-        <FullscreenControl position="bottom-right" />
-        <NavigationControl position="bottom-right" visualizePitch={true} />
+        <RecenterMap center={center} selectedPlace={selectedPlace} routePoints={routePoints} />
 
-        {/* Render Markers */}
-        {providers.map((p) => (
+        <Marker position={[center.lat, center.lng]} icon={userMarker}>
+          <Popup>
+            <div className="min-w-[160px]">
+              <p className="text-sm font-bold text-slate-900">Your location</p>
+              <p className="text-xs text-slate-600">Nearby services are mapped around you.</p>
+              {onScan && (
+                <button
+                  onClick={onScan}
+                  className="mt-3 rounded-lg bg-slate-900 px-3 py-2 text-xs font-bold text-white"
+                >
+                  Scan Again
+                </button>
+              )}
+            </div>
+          </Popup>
+        </Marker>
+
+        <CircleMarker
+          center={[center.lat, center.lng]}
+          radius={48}
+          pathOptions={{ color: "#2563eb", fillColor: "#2563eb", fillOpacity: 0.08 }}
+        />
+
+        {providers.map((provider) => (
           <Marker
-            key={p.id}
-            longitude={p.lng}
-            latitude={p.lat}
-            anchor="bottom"
-            onClick={e => {
-              e.originalEvent.stopPropagation();
-              setSelectedPlace(p);
-              mapRef.current?.flyTo({ center: [p.lng, p.lat], zoom: 16, pitch: 70 });
+            key={provider.id}
+            position={[provider.lat, provider.lng]}
+            icon={placeMarker}
+            eventHandlers={{
+              click: () => onSelectPlace?.(provider),
             }}
           >
-            <div className="cursor-pointer hover:scale-110 transition-transform group relative">
-              <div className="w-10 h-10 bg-orange-500 rounded-full flex items-center justify-center border-4 border-[#0a0f1a] shadow-lg shadow-orange-500/50">
-                <span className="text-white text-lg font-bold">A</span>
+            <Popup>
+              <div className="min-w-[220px]">
+                <p className="text-sm font-bold text-slate-900">{provider.name}</p>
+                <p className="mt-1 text-xs text-slate-600">{provider.address || "Student service"}</p>
+                <p className="mt-1 text-xs font-semibold text-amber-600">
+                  Rating {Number(provider.rating || 0).toFixed(1)}
+                </p>
+                <div className="mt-3 flex gap-2">
+                  {provider.phone && (
+                    <a
+                      href={`tel:${provider.phone}`}
+                      className="inline-flex items-center gap-1 rounded-lg bg-slate-900 px-3 py-2 text-xs font-bold text-white"
+                    >
+                      <Phone size={12} />
+                      Call
+                    </a>
+                  )}
+                  {provider.website && (
+                    <a
+                      href={ensureUrl(provider.website)}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-3 py-2 text-xs font-bold text-slate-800"
+                    >
+                      <Globe size={12} />
+                      Website
+                    </a>
+                  )}
+                </div>
               </div>
-              <div className="absolute top-12 left-1/2 -translate-x-1/2 bg-[#0a0f1a] px-3 py-1.5 rounded-lg border border-white/10 shadow-2xl whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-                <p className="text-xs font-bold text-white">{p.name}</p>
-                <p className="text-[10px] text-yellow-400">⭐ {Number(p.rating).toFixed(1)}</p>
-              </div>
-            </div>
+            </Popup>
           </Marker>
         ))}
 
-        {/* Selected Place Popup */}
-        {selectedPlace && (
-          <Popup
-            longitude={selectedPlace.lng}
-            latitude={selectedPlace.lat}
-            anchor="bottom"
-            offset={40}
-            closeOnClick={false}
-            onClose={() => setSelectedPlace(null)}
-            className="z-50"
-            style={{ borderRadius: "24px" }}
-          >
-            <div className="w-[280px] bg-[#0d1117] p-4 rounded-3xl border border-white/10 shadow-2xl">
-              <div className="flex gap-3 mb-3">
-                <img src={selectedPlace.photo} className="w-16 h-16 rounded-2xl object-cover border border-white/5" alt="cover" />
-                <div>
-                  <h3 className="text-sm font-black text-white leading-tight">{selectedPlace.name}</h3>
-                  <p className="text-[10px] text-slate-400 mt-1">{selectedPlace.address || "Verified Service"}</p>
-                  <p className="text-[10px] font-black text-yellow-400 mt-1">⭐ {Number(selectedPlace.rating).toFixed(1)}</p>
-                </div>
-              </div>
-
-              {/* Rich Data */}
-              <div className="bg-white/[0.03] p-2 rounded-xl border border-white/5 mb-3">
-                <p className="text-[10px] text-slate-400 line-clamp-3">{selectedPlace.about || "Premium student facility providing high-speed WiFi, 24/7 power backup, and regular maintenance."}</p>
-              </div>
-
-              <div className="flex flex-col gap-2">
-                <a href={`https://wa.me/${selectedPlace.social?.whatsapp || "9100000000"}`} target="_blank"
-                  className="flex items-center justify-center gap-2 bg-[#25D366] hover:bg-[#128C7E] text-white py-2.5 rounded-xl text-xs font-black transition-all shadow-lg shadow-[#25D366]/20">
-                  <MessageCircle size={14} /> WhatsApp
-                </a>
-                <button className="flex items-center justify-center gap-2 bg-gradient-to-r from-orange-500 to-pink-500 text-white py-2.5 rounded-xl text-xs font-black transition-all shadow-lg shadow-orange-500/20">
-                  <Navigation size={14} /> 3D Route
-                </button>
-              </div>
-            </div>
-          </Popup>
+        {routePoints.length > 1 && (
+          <Polyline
+            positions={routePoints}
+            pathOptions={{ color: "#f97316", weight: 6, opacity: 0.85, lineCap: "round" }}
+          />
         )}
-      </Map>
+      </MapContainer>
 
-      {/* Mapbox Styles Override */}
-      <style>{`
-        .mapboxgl-popup-content {
-          background: transparent !important;
-          padding: 0 !important;
-          box-shadow: none !important;
-        }
-        .mapboxgl-popup-tip {
-          border-top-color: #0d1117 !important;
-        }
-        .mapboxgl-ctrl-group {
-          background: #0d1117 !important;
-          border: 1px solid rgba(255,255,255,0.1) !important;
-          border-radius: 12px !important;
-          overflow: hidden !important;
-        }
-        .mapboxgl-ctrl-group button {
-          border-bottom: 1px solid rgba(255,255,255,0.05) !important;
-        }
-        .mapboxgl-ctrl-icon {
-          filter: invert(1) opacity(0.8) !important;
-        }
-      `}</style>
+      <RouteSummaryPill
+        summary={routeSummary}
+        loading={routeLoading}
+        error={routeError}
+        onRefresh={routeTarget ? loadRoute : undefined}
+      />
+
+      <div className="pointer-events-none absolute bottom-4 left-4 z-[500] hidden rounded-2xl border border-white/10 bg-[#08101c]/88 p-3 text-white shadow-xl backdrop-blur-xl md:block">
+        <div className="flex items-center gap-2">
+          <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-orange-500/20 text-orange-300">
+            <MapPin size={18} />
+          </div>
+          <div>
+            <p className="text-xs font-black uppercase tracking-[0.24em] text-slate-400">Live Map</p>
+            <p className="text-sm font-semibold text-slate-100">
+              OpenStreetMap + OpenRouteService routing
+            </p>
+          </div>
+        </div>
+      </div>
+
     </div>
   );
 }

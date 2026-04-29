@@ -1,12 +1,6 @@
 import { NextResponse } from "next/server";
-import { verifyAuth } from "@/lib/api-auth";
 
 export async function GET(req: Request) {
-  const auth = await verifyAuth(req);
-  if ("error" in auth) {
-    return NextResponse.json({ error: auth.error }, { status: auth.status });
-  }
-
   const { searchParams } = new URL(req.url);
   const start = searchParams.get("start");
   const end = searchParams.get("end");
@@ -21,10 +15,32 @@ export async function GET(req: Request) {
   }
 
   try {
-    const url = `https://api.openrouteservice.org/v2/directions/driving-car?api_key=${apiKey}&start=${start}&end=${end}`;
-    const resp = await fetch(url);
-    const data = await resp.json();
-    return NextResponse.json(data);
+    const url = new URL("https://api.openrouteservice.org/v2/directions/driving-car");
+    url.searchParams.set("api_key", apiKey);
+    url.searchParams.set("start", start);
+    url.searchParams.set("end", end);
+
+    const response = await fetch(url.toString(), {
+      headers: {
+        Accept: "application/json, application/geo+json",
+      },
+      next: { revalidate: 0 },
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      const message =
+        data?.error?.message ||
+        data?.message ||
+        data?.details ||
+        "Failed to fetch route from OpenRouteService";
+      return NextResponse.json({ error: message }, { status: response.status });
+    }
+
+    return NextResponse.json(data, {
+      headers: { "Cache-Control": "no-store" },
+    });
   } catch (error) {
     console.error("ORS Proxy Error:", error);
     return NextResponse.json({ error: "Failed to fetch route" }, { status: 500 });
