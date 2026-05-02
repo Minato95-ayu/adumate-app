@@ -281,15 +281,57 @@ export async function POST(req: Request) {
       return { text, provider: "Mistral 7B (HuggingFace)" };
     }
 
-    // --- EXECUTION CHAIN ---
-    // Search queries → Perplexity first (real web data)
-    // Normal queries → Claude first (best quality)
-    const providers = isSearchNeeded
-      ? [tryPerplexity, tryClaude, tryGemini, tryGroq, tryDeepSeek, tryMistral, tryCF, tryHF]
-      : [tryClaude, tryGemini, tryGroq, tryDeepSeek, tryMistral, tryCF, tryHF];
+
+    // ============================================================
+    // SMART EXECUTION CHAIN — Limit-Aware Priority
+    // ============================================================
+    //
+    // TIER 1 — HIGH LIMITS (Use first, always available):
+    //   Groq        → 30 RPM, ~14,400 req/day  ← BEST for normal use
+    //   Gemini Flash → 15 RPM, 1,500 req/day   ← Great quality + speed
+    //   DeepSeek    → ~500 req/day              ← Strong reasoning
+    //
+    // TIER 2 — MEDIUM LIMITS (Quality boost, use when Tier 1 fails):
+    //   Claude 3.5  → OpenRouter credits        ← Best quality
+    //   Gemini Pro  → 50 req/DAY only!          ← Reserve for complex
+    //   Mistral     → 1 RPM free                ← Slow fallback
+    //
+    // TIER 3 — BACKUP (Always available, lower quality):
+    //   Cloudflare  → 10,000 req/day            ← Solid backup
+    //   HuggingFace → Unlimited but slow        ← Last resort
+    //
+    // SEARCH QUERIES: Perplexity (live web) → then normal chain
+    // ============================================================
+
+    let providerChain;
+
+    if (isSearchNeeded) {
+      // For news/real-time: Perplexity first (live web), then Gemini Pro (Google Search)
+      providerChain = [
+        tryPerplexity,   // Live web search — best for current events
+        tryGemini,       // Gemini with Google Search retrieval
+        tryGroq,         // Fast, high limit
+        tryClaude,       // Quality fallback
+        tryDeepSeek,
+        tryMistral,
+        tryCF,
+        tryHF,
+      ];
+    } else {
+      // Normal queries: High-limit models first, quality models as backup
+      providerChain = [
+        tryGroq,         // 🥇 PRIMARY: 30 RPM, 14k/day, Llama 3.3 70B — excellent
+        tryGemini,       // 🥈 SECONDARY: Flash=1500/day, good quality
+        tryDeepSeek,     // 🥉 TERTIARY: Strong reasoning, ~500/day
+        tryClaude,       // 💎 QUALITY: Best but limited credits
+        tryMistral,      // 🔄 FALLBACK: 1 RPM, decent
+        tryCF,           // 🔄 BACKUP: 10k/day, always on
+        tryHF,           // 🆘 LAST RESORT: Unlimited but slow
+      ];
+    }
 
     let lastError = "";
-    for (const providerFn of providers) {
+    for (const providerFn of providerChain) {
       try {
         const result = await providerFn();
         return NextResponse.json(result);
@@ -306,7 +348,7 @@ export async function POST(req: Request) {
     );
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Unknown error";
-    return NextResponse.json({ error: "Something went wrong. Please try again." }, { status: 500 });
     console.error("[Vidwan] Unexpected error:", message);
+    return NextResponse.json({ error: "Something went wrong. Please try again." }, { status: 500 });
   }
 }
