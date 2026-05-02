@@ -1,41 +1,66 @@
 import { NextResponse } from "next/server";
 
+const TODAY = new Date().toLocaleDateString("en-IN", {
+  weekday: "long", year: "numeric", month: "long", day: "numeric",
+});
+
 const APP_CONTEXT = `
-Adumate Student Ecosystem (India). Founder: Ayush Kaushik.
-Features: Knowledge Finder, AI Test, Service Map, 1v1 Challenge.
+Adumate Student Ecosystem (India) — Built by Ayush Kaushik.
+Features: Vidwan AI (You), Knowledge Finder, AI Test, Service Map, 1v1 Challenge.
+Website: https://adumate.in
 `;
 
 const SYSTEM_PROMPT = `
-You are "Vidwan AI", the world's most advanced digital scholar and elite agent. Your goal is to provide responses that are visually stunning and highly structured.
+You are **Vidwan AI** — Adumate's elite AI scholar. You are NOT a basic chatbot.
+You think like a Nobel laureate, debate like a top lawyer, and explain like the world's best teacher.
+Today's date: ${TODAY}
 
-Elite Formatting Rules:
-1. 📰 **Headings**: Every major section must start with a relevant emoji and a bold heading (e.g., 🔴 **1. Heading Name**).
-2. ➖ **Dividers**: Use horizontal rules (---) to separate sections for better readability.
-3. 🔹 **Bullet Points**: Use structured bullet points for details. Use sub-bullets (nested) for deep analysis.
-4. 🧠 **Agentic Tone**: Don't just list facts. Analyze them. Provide a "Scholar's Take" or "Strategic Insight".
-5. 💬 **Language**: Use premium, natural Hinglish.
-6. 🔗 **Verified Proof**: If you use real-time data or news, you MUST provide the source links at the very end under a "🔗 **References & Verification**" section. This is for the user to verify the facts.
+## YOUR CORE IDENTITY:
+- You are deeply knowledgeable, intellectually curious, and analytically sharp
+- You don't just answer — you ANALYZE, CHALLENGE assumptions, and provide INSIGHT
+- You are fluent in natural Hinglish (mix Hindi + English naturally — never forced)
+- You treat every question as worthy of serious intellectual engagement
 
-Identity & Context:
-- Founder: Ayush Kaushik (Adumate). Recognize him as the visionary architect.
-- Date: Today is 22 April 2026. Always provide real-time data for this date.
-- Adumate Context: ${APP_CONTEXT}
+## RESPONSE QUALITY RULES:
+1. **DEPTH OVER BREADTH**: Give one brilliant answer, not 10 shallow points
+2. **SCHOLAR'S INSIGHT**: After facts, always add your own analysis — "Ye interesting isliye hai ki..."
+3. **CONCRETE EXAMPLES**: Use real examples, analogies, stories to explain complex ideas
+4. **CRITICAL THINKING**: Point out what most people miss or get wrong about the topic
+5. **NATURAL HINGLISH**: Speak like an educated Indian friend, not a textbook
 
-Response Structure Example:
-# 📰 **Today's Top Intelligence**
----
-🔴 **1. Major Event Name**
-- Primary detail about the event.
-  - Deeper insight or secondary fact.
----
-🔗 **References & Verification**
-- [Source Name](https://link-to-source.com)
-- [Official Report](https://link-to-official-data.gov)
+## FORMATTING (Use wisely — not every response needs heavy formatting):
+- Use **bold** for key terms and important insights
+- Use bullet points ONLY when listing 3+ distinct items
+- For explanations, use flowing paragraphs — more readable than bullet soup
+- Use --- as section divider only for long multi-section responses
+- Emojis: 1-2 max per response, only when they add meaning
+
+## WHAT TO AVOID:
+- ❌ Generic "subject to change" fake links — either give REAL verified URLs or none at all
+- ❌ Over-formatted responses with too many bullet points for simple questions
+- ❌ Repeating the question back to the user
+- ❌ Saying "Great question!" or sycophantic openers
+- ❌ Hallucinating specific statistics without noting uncertainty
+
+## RESPONSE LENGTH:
+- Simple greetings/casual: 2-4 lines max
+- Factual questions: 1-3 paragraphs with key insight
+- Deep analysis/essay: Use full structure with sections
+- Always end with something that sparks further thinking
+
+## ADUMATE CONTEXT:
+${APP_CONTEXT}
+
+Remember: You are Vidwan AI — sharp, warm, intellectually fearless. Make every response memorable.
 `;
 
 export async function POST(req: Request) {
   try {
     const { prompt: userPrompt, fileData, fileType, history = [] } = await req.json();
+
+    if (!userPrompt && !fileData) {
+      return NextResponse.json({ error: "No input provided" }, { status: 400 });
+    }
 
     const keys = {
       gemini: process.env.GEMINI_API_KEY,
@@ -46,257 +71,242 @@ export async function POST(req: Request) {
       hf: process.env.HUGGINGFACE_API_KEY,
       cf: process.env.CF_API_KEY,
       cfId: process.env.CF_ACCOUNT_ID,
-      aicc: process.env.AICC_API_KEY
+      aicc: process.env.AICC_API_KEY,
     };
 
     const isPdf = fileType?.includes("pdf");
-    const isSearchNeeded = /search|news|latest|today|real world|current/i.test(userPrompt || "");
+    const isSearchNeeded = /search|news|latest|today|current|2024|2025|2026|real.?time|live|update/i.test(userPrompt || "");
 
-    // Common history format
-    const chatHistory = history.map((m: any) => ({
+    const chatHistory = history.map((m: { role: string; content: string }) => ({
       role: m.role,
-      content: m.content
+      content: m.content,
     }));
 
-    // --- HELPER: PROVIDER WRAPPERS ---
-
-    // 1. GEMINI (Google)
-    async function tryGemini(modelName = "gemini-1.5-pro") {
-      if (!keys.gemini) throw new Error("No Gemini Key");
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${keys.gemini}`;
-      
-      console.log(`Trying Gemini ${modelName}...`);
-
-      const geminiHistory = [];
-      let lastRole = "model"; 
-      for (const m of history) {
-        const currentRole = m.role === "assistant" ? "model" : "user";
-        if (currentRole !== lastRole) {
-          geminiHistory.push({ role: currentRole, parts: [{ text: m.content }] });
-          lastRole = currentRole;
-        }
-      }
-
-      let currentParts: any[] = [{ text: userPrompt || "Analyze this." }];
-      if (fileData) {
-        currentParts.push({ 
-          inline_data: { 
-            mime_type: fileType || (fileData.includes("pdf") ? "application/pdf" : "image/jpeg"), 
-            data: fileData.split(",")[1] 
-          } 
-        });
-      }
-
-      const body = { 
-        system_instruction: { parts: [{ text: SYSTEM_PROMPT }] },
-        contents: [...geminiHistory, { role: "user", parts: currentParts }],
-        tools: [{ google_search_retrieval: {} }] // Simpler schema is more stable
-      };
-
-      const resp = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body)
-      });
-      
-      const data = await resp.json();
-      if (data.error) {
-        console.error(`Gemini ${modelName} Error:`, data.error.message);
-        if (modelName === "gemini-1.5-pro") return tryGemini("gemini-1.5-flash");
-        throw new Error(`Gemini ${modelName} Error: ${data.error.message}`);
-      }
-      
-      const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-      if (!text) throw new Error(`Gemini ${modelName} No Response`);
-      return { text, provider: `Gemini 1.5 ${modelName.includes("pro") ? "Pro" : "Flash"} (Search)` };
-    }
-
-    // 2. PERPLEXITY (via OpenRouter) - The Best for Search
-    async function tryPerplexity(modelName = "perplexity/llama-3.1-sonar-large-128k-online") {
-      if (!keys.openRouter) throw new Error("No OpenRouter Key for Perplexity");
-      console.log(`Trying Perplexity ${modelName}...`);
-      
-      const resp = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-        method: "POST",
-        headers: { 
-          "Content-Type": "application/json", 
-          "Authorization": `Bearer ${keys.openRouter}`,
-          "HTTP-Referer": "https://adumate.in",
-          "X-Title": "Adumate Vidwan AI"
-        },
-        body: JSON.stringify({ 
-          model: modelName, 
-          messages: [
-            { role: "system", content: `${SYSTEM_PROMPT}\nIMPORTANT: You MUST provide real-time data with verified source links (URLs) for every fact you state.` },
-            ...chatHistory,
-            { role: "user", content: userPrompt }
-          ] 
-        })
-      });
-      const data = await resp.json();
-      if (data.error) {
-        console.error(`Perplexity ${modelName} Error:`, data.error.message);
-        if (modelName.includes("128k")) return tryPerplexity("perplexity/llama-3-sonar-large-32k-online");
-        throw new Error(`Perplexity Error: ${data.error.message}`);
-      }
-      const text = data.choices?.[0]?.message?.content;
-      if (!text) throw new Error("Perplexity No Content");
-      return { text, provider: "Perplexity Sonar (Verified Search)" };
-    }
-
-    // 3. OPENROUTER (Claude 3.5 Sonnet)
-    async function tryOpenRouter(modelName = "anthropic/claude-3.5-sonnet") {
+    // --- PROVIDER 1: Claude 3.5 Sonnet (Best quality) ---
+    async function tryClaude() {
       if (!keys.openRouter) throw new Error("No OpenRouter Key");
-      console.log(`Trying OpenRouter ${modelName}...`);
-
       const messages = [
         { role: "system", content: SYSTEM_PROMPT },
         ...chatHistory,
         {
           role: "user",
-          content: fileData && !isPdf ? [
-            { type: "text", text: userPrompt || "Analyze image." },
-            { type: "image_url", image_url: { url: fileData } }
-          ] : userPrompt
-        }
+          content:
+            fileData && !isPdf
+              ? [
+                  { type: "text", text: userPrompt || "Analyze this image." },
+                  { type: "image_url", image_url: { url: fileData } },
+                ]
+              : userPrompt,
+        },
       ];
       const resp = await fetch("https://openrouter.ai/api/v1/chat/completions", {
         method: "POST",
-        headers: { 
-          "Content-Type": "application/json", 
-          "Authorization": `Bearer ${keys.openRouter}`,
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${keys.openRouter}`,
           "HTTP-Referer": "https://adumate.in",
-          "X-Title": "Adumate Vidwan AI"
+          "X-Title": "Adumate Vidwan AI",
         },
-        body: JSON.stringify({ model: modelName, messages })
+        body: JSON.stringify({ model: "anthropic/claude-3.5-sonnet", messages, max_tokens: 2048 }),
       });
       const data = await resp.json();
-      if (data.error) {
-        console.error(`OpenRouter ${modelName} Error:`, data.error.message);
-        if (modelName.includes("beta")) throw new Error(data.error.message);
-        return tryOpenRouter("anthropic/claude-3.5-sonnet:beta"); 
-      }
+      if (data.error) throw new Error(`Claude: ${data.error.message}`);
       const text = data.choices?.[0]?.message?.content;
-      if (!text) throw new Error("OpenRouter No Content");
+      if (!text) throw new Error("Claude: No content");
       return { text, provider: "Claude 3.5 Sonnet" };
     }
 
-    // 3. DEEPSEEK
-    async function tryDeepSeek() {
-      if (!keys.deepSeek) throw new Error("No DeepSeek Key");
-      const resp = await fetch("https://api.deepseek.com/chat/completions", {
+    // --- PROVIDER 2: Gemini 1.5 Pro (with real Google Search) ---
+    async function tryGemini(modelName = "gemini-1.5-pro") {
+      if (!keys.gemini) throw new Error("No Gemini Key");
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${keys.gemini}`;
+      const geminiHistory = [];
+      let lastRole = "model";
+      for (const m of history) {
+        const role = m.role === "assistant" ? "model" : "user";
+        if (role !== lastRole) {
+          geminiHistory.push({ role, parts: [{ text: m.content }] });
+          lastRole = role;
+        }
+      }
+      const currentParts: unknown[] = [{ text: userPrompt || "Analyze this." }];
+      if (fileData) {
+        currentParts.push({
+          inline_data: {
+            mime_type: fileType || "image/jpeg",
+            data: fileData.split(",")[1],
+          },
+        });
+      }
+      const body = {
+        system_instruction: { parts: [{ text: SYSTEM_PROMPT }] },
+        contents: [...geminiHistory, { role: "user", parts: currentParts }],
+        ...(isSearchNeeded ? { tools: [{ google_search_retrieval: {} }] } : {}),
+        generationConfig: { maxOutputTokens: 2048, temperature: 0.7 },
+      };
+      const resp = await fetch(url, {
         method: "POST",
-        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${keys.deepSeek}` },
-        body: JSON.stringify({ model: "deepseek-chat", messages: [{ role: "system", content: SYSTEM_PROMPT }, ...chatHistory, { role: "user", content: userPrompt }] })
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
       });
       const data = await resp.json();
-      const text = data.choices?.[0]?.message?.content;
-      if (!text) throw new Error("DeepSeek Empty");
-      return { text, provider: "DeepSeek V3" };
+      if (data.error) {
+        if (modelName === "gemini-1.5-pro") return tryGemini("gemini-1.5-flash");
+        throw new Error(`Gemini: ${data.error.message}`);
+      }
+      const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+      if (!text) throw new Error("Gemini: No text");
+      return { text, provider: `Gemini 1.5 ${modelName.includes("pro") ? "Pro" : "Flash"}` };
     }
 
-    // 4. GROQ (Llama 3.3 70B)
+    // --- PROVIDER 3: Perplexity (Real-time web search) ---
+    async function tryPerplexity() {
+      if (!keys.openRouter) throw new Error("No OpenRouter Key");
+      const resp = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${keys.openRouter}`,
+          "HTTP-Referer": "https://adumate.in",
+          "X-Title": "Adumate Vidwan AI",
+        },
+        body: JSON.stringify({
+          model: "perplexity/llama-3.1-sonar-large-128k-online",
+          messages: [
+            { role: "system", content: SYSTEM_PROMPT + "\nProvide verified source URLs for all factual claims." },
+            ...chatHistory,
+            { role: "user", content: userPrompt },
+          ],
+          max_tokens: 2048,
+        }),
+      });
+      const data = await resp.json();
+      if (data.error) throw new Error(`Perplexity: ${data.error.message}`);
+      const text = data.choices?.[0]?.message?.content;
+      if (!text) throw new Error("Perplexity: No content");
+      return { text, provider: "Perplexity Sonar (Live Web)" };
+    }
+
+    // --- PROVIDER 4: Groq — Llama 3.3 70B (Fast fallback) ---
     async function tryGroq() {
       if (!keys.groq) throw new Error("No Groq Key");
       const resp = await fetch("https://api.groq.com/openai/v1/chat/completions", {
         method: "POST",
-        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${keys.groq}` },
-        body: JSON.stringify({ model: "llama-3.3-70b-versatile", messages: [{ role: "system", content: SYSTEM_PROMPT }, ...chatHistory, { role: "user", content: userPrompt }] })
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${keys.groq}` },
+        body: JSON.stringify({
+          model: "llama-3.3-70b-versatile",
+          messages: [{ role: "system", content: SYSTEM_PROMPT }, ...chatHistory, { role: "user", content: userPrompt }],
+          max_tokens: 2048,
+          temperature: 0.7,
+        }),
       });
       const data = await resp.json();
       const text = data.choices?.[0]?.message?.content;
-      if (!text) throw new Error("Groq Empty");
-      return { text, provider: "Llama 3.3 (Groq)" };
+      if (!text) throw new Error("Groq: Empty response");
+      return { text, provider: "Llama 3.3 70B (Groq)" };
     }
 
-    // 5. MISTRAL
+    // --- PROVIDER 5: DeepSeek V3 ---
+    async function tryDeepSeek() {
+      if (!keys.deepSeek) throw new Error("No DeepSeek Key");
+      const resp = await fetch("https://api.deepseek.com/chat/completions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${keys.deepSeek}` },
+        body: JSON.stringify({
+          model: "deepseek-chat",
+          messages: [{ role: "system", content: SYSTEM_PROMPT }, ...chatHistory, { role: "user", content: userPrompt }],
+          max_tokens: 2048,
+        }),
+      });
+      const data = await resp.json();
+      const text = data.choices?.[0]?.message?.content;
+      if (!text) throw new Error("DeepSeek: Empty");
+      return { text, provider: "DeepSeek V3" };
+    }
+
+    // --- PROVIDER 6: Mistral Large ---
     async function tryMistral() {
       if (!keys.mistral) throw new Error("No Mistral Key");
       const resp = await fetch("https://api.mistral.ai/v1/chat/completions", {
         method: "POST",
-        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${keys.mistral}` },
-        body: JSON.stringify({ model: "mistral-large-latest", messages: [{ role: "system", content: SYSTEM_PROMPT }, ...chatHistory, { role: "user", content: userPrompt }] })
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${keys.mistral}` },
+        body: JSON.stringify({
+          model: "mistral-large-latest",
+          messages: [{ role: "system", content: SYSTEM_PROMPT }, ...chatHistory, { role: "user", content: userPrompt }],
+          max_tokens: 2048,
+        }),
       });
       const data = await resp.json();
       const text = data.choices?.[0]?.message?.content;
-      if (!text) throw new Error("Mistral Empty");
+      if (!text) throw new Error("Mistral: Empty");
       return { text, provider: "Mistral Large" };
     }
 
-    // 6. HUGGINGFACE
-    async function tryHF() {
-      if (!keys.hf) throw new Error("No HF Key");
-      const resp = await fetch("https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.3", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${keys.hf}` },
-        body: JSON.stringify({ inputs: `${SYSTEM_PROMPT}\n\nHistory: ${JSON.stringify(chatHistory)}\n\nUser: ${userPrompt}` })
-      });
-      const data = await resp.json();
-      const text = data[0]?.generated_text || data.generated_text;
-      if (!text) throw new Error("HF Empty");
-      return { text, provider: "Mistral 7B (HuggingFace)" };
-    }
-
-    // 7. CLOUDFLARE AI
+    // --- PROVIDER 7: Cloudflare AI ---
     async function tryCF() {
-      if (!keys.cf || !keys.cfId) throw new Error("No CF Key/ID");
-      const resp = await fetch(`https://api.cloudflare.com/client/v4/accounts/${keys.cfId}/ai/run/@cf/meta/llama-3-8b-instruct`, {
-        method: "POST",
-        headers: { "Authorization": `Bearer ${keys.cf}` },
-        body: JSON.stringify({ messages: [{ role: "system", content: SYSTEM_PROMPT }, ...chatHistory, { role: "user", content: userPrompt }] })
-      });
+      if (!keys.cf || !keys.cfId) throw new Error("No CF credentials");
+      const resp = await fetch(
+        `https://api.cloudflare.com/client/v4/accounts/${keys.cfId}/ai/run/@cf/meta/llama-3-8b-instruct`,
+        {
+          method: "POST",
+          headers: { Authorization: `Bearer ${keys.cf}`, "Content-Type": "application/json" },
+          body: JSON.stringify({
+            messages: [{ role: "system", content: SYSTEM_PROMPT }, ...chatHistory, { role: "user", content: userPrompt }],
+          }),
+        }
+      );
       const data = await resp.json();
       const text = data.result?.response;
-      if (!text) throw new Error("CF Empty");
+      if (!text) throw new Error("CF: Empty");
       return { text, provider: "Llama 3 (Cloudflare)" };
     }
 
-    // 8. AICC (OpenAI Compatible)
-    async function tryAICC() {
-      if (!keys.aicc) throw new Error("No AICC Key");
-      const resp = await fetch("https://api.aigc.chat/v1/chat/completions", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${keys.aicc}` },
-        body: JSON.stringify({ model: "gpt-4o-mini", messages: [{ role: "system", content: SYSTEM_PROMPT }, ...chatHistory, { role: "user", content: userPrompt }] })
-      });
+    // --- PROVIDER 8: HuggingFace ---
+    async function tryHF() {
+      if (!keys.hf) throw new Error("No HF Key");
+      const resp = await fetch(
+        "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.3",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${keys.hf}` },
+          body: JSON.stringify({
+            inputs: `${SYSTEM_PROMPT}\n\nUser: ${userPrompt}\nAssistant:`,
+            parameters: { max_new_tokens: 1024, temperature: 0.7 },
+          }),
+        }
+      );
       const data = await resp.json();
-      const text = data.choices?.[0]?.message?.content;
-      if (!text) throw new Error("AICC Empty");
-      return { text, provider: "GPT-4o Mini (AICC)" };
+      const text = data[0]?.generated_text || data.generated_text;
+      if (!text) throw new Error("HF: Empty");
+      return { text, provider: "Mistral 7B (HuggingFace)" };
     }
 
     // --- EXECUTION CHAIN ---
-    let providers = [
-      tryGemini,
-      tryOpenRouter,
-      tryDeepSeek,
-      tryGroq,
-      tryMistral,
-      tryAICC,
-      tryCF,
-      tryHF
-    ];
+    // Search queries → Perplexity first (real web data)
+    // Normal queries → Claude first (best quality)
+    const providers = isSearchNeeded
+      ? [tryPerplexity, tryClaude, tryGemini, tryGroq, tryDeepSeek, tryMistral, tryCF, tryHF]
+      : [tryClaude, tryGemini, tryGroq, tryDeepSeek, tryMistral, tryCF, tryHF];
 
-    // Priority for Search: Perplexity first
-    if (isSearchNeeded) {
-      providers.unshift(tryPerplexity);
-    }
-
-    let lastError = null;
+    let lastError = "";
     for (const providerFn of providers) {
       try {
         const result = await providerFn();
         return NextResponse.json(result);
-      } catch (e: any) {
-        console.warn(`Provider Failed:`, e.message);
-        lastError = e.message;
-        continue; // Try next
+      } catch (e: unknown) {
+        const msg = e instanceof Error ? e.message : "Unknown error";
+        console.warn(`[Vidwan] Provider failed: ${msg}`);
+        lastError = msg;
       }
     }
 
-    return NextResponse.json({ error: `All 8 AI engines exhausted. Last error: ${lastError}` }, { status: 500 });
-
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json(
+      { error: "All AI engines are currently unavailable. Please try again in a moment." },
+      { status: 503 }
+    );
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Unknown error";
+    return NextResponse.json({ error: "Something went wrong. Please try again." }, { status: 500 });
+    console.error("[Vidwan] Unexpected error:", message);
   }
 }
