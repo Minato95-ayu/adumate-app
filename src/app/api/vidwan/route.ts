@@ -238,6 +238,28 @@ export async function POST(req: Request) {
       return { text, provider: "Mistral 7B (HuggingFace)" };
     }
 
+    // --- PROVIDER 7: AICC (GPT-4o Mini compatible) ---
+    async function tryAICC() {
+      if (!keys.aicc) throw new Error("No AICC Key");
+      const resp = await fetch("https://api.aigc.chat/v1/chat/completions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${keys.aicc}` },
+        body: JSON.stringify({
+          model: "gpt-4o-mini",
+          messages: [
+            { role: "system", content: SYSTEM_PROMPT },
+            ...chatHistory,
+            { role: "user", content: userPrompt },
+          ],
+          max_tokens: 2048,
+        }),
+      });
+      const data = await resp.json();
+      const text = data.choices?.[0]?.message?.content;
+      if (!text) throw new Error("AICC: Empty");
+      return { text, provider: "GPT-4o Mini (AICC)" };
+    }
+
 
     // ============================================================
     // SMART EXECUTION CHAIN — Available APIs Only
