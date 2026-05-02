@@ -15,9 +15,13 @@ import {
   Globe,
   Phone,
   MessageCircle,
-  Instagram,
-  Youtube,
+  Link2,
+  Play,
 } from "lucide-react";
+
+// Aliases for clarity — lucide-react uses Link2 & Play instead of Instagram/Youtube
+const Instagram = Link2;
+const Youtube = Play;
 import { motion, AnimatePresence } from "framer-motion";
 import { auth } from "@/lib/firebase";
 
@@ -118,8 +122,11 @@ export default function MapClient() {
 
       const data = await res.json();
       const mappedPlaces: Place[] = ((data.places || []) as RawPlace[]).map((p, i: number) => ({
-        ...p,
         id: p.id || `${cat}-${i}`,
+        name: p.name || "",
+        address: p.address || "",
+        phone: p.phone || "",
+        website: p.website || "",
         subject: cat.toUpperCase(),
         fees: p.rating ? `⭐ ${p.rating}` : "Verified service",
         rating: Number(p.rating || (3.8 + Math.random() * 1.1)),
@@ -359,11 +366,11 @@ export default function MapClient() {
         </aside>
 
         <div className="flex-1 relative">
-          <Map
-            providers={filtered}
+        <Map
+            providers={filtered as unknown as import("@/data/providers").Provider[]}
             center={userLoc}
-            selectedPlace={selectedPlace}
-            onSelectPlace={setSelectedPlace}
+            selectedPlace={selectedPlace as unknown as import("@/data/providers").Provider | null}
+            onSelectPlace={setSelectedPlace as unknown as (place: import("@/data/providers").Provider | null) => void}
             onScan={() => fetchPlaces(userLoc.lat, userLoc.lng, selectedCategory)}
           />
 

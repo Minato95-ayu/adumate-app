@@ -3,6 +3,19 @@ import { NextRequest, NextResponse } from "next/server";
 // SECURITY: Server-side only — NEVER use NEXT_PUBLIC_ here (it leaks into browser bundle)
 const GOOGLE_KEY = process.env.GOOGLE_MAPS_API_KEY;
 
+// Whitelist of allowed categories — prevents injection into OSM/Google queries
+const ALLOWED_CATEGORIES = new Set(["library", "hostel", "mess", "tutor", "job"]);
+
+function isValidLat(val: string | null): boolean {
+  const n = Number(val);
+  return val !== null && val.trim() !== "" && !isNaN(n) && n >= -90 && n <= 90;
+}
+
+function isValidLon(val: string | null): boolean {
+  const n = Number(val);
+  return val !== null && val.trim() !== "" && !isNaN(n) && n >= -180 && n <= 180;
+}
+
 const GOOGLE_CATEGORY_MAP: Record<string, { type: string; keyword: string }> = {
   library: { type: "library", keyword: "library study room reading" },
   hostel: { type: "lodging", keyword: "hostel pg student accommodation" },
