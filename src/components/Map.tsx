@@ -128,9 +128,16 @@ function RouteSummaryPill({
   );
 }
 
-function ensureUrl(value?: string) {
+function ensureUrl(value?: string): string {
   if (!value) return "";
-  return /^https?:\/\//i.test(value) ? value : `https://${value}`;
+  try {
+    const url = new URL(/^https?:\/\//i.test(value) ? value : `https://${value}`);
+    // Only allow safe protocols — block javascript:, data:, etc.
+    if (!["http:", "https:"].includes(url.protocol)) return "";
+    return url.toString();
+  } catch {
+    return "";
+  }
 }
 
 export default function Map({

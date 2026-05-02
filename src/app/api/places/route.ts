@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const GOOGLE_KEY = process.env.GOOGLE_MAPS_API_KEY || process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+// SECURITY: Server-side only — NEVER use NEXT_PUBLIC_ here (it leaks into browser bundle)
+const GOOGLE_KEY = process.env.GOOGLE_MAPS_API_KEY;
 
 const GOOGLE_CATEGORY_MAP: Record<string, { type: string; keyword: string }> = {
   library: { type: "library", keyword: "library study room reading" },
@@ -142,21 +143,26 @@ async function fetchFromOsm(lat: string, lon: string, category: string, radius: 
 }
 
 export async function GET(req: NextRequest) {
-  // Allow public access — auth is optional for map browsing
-  // (verifyAuth kept for reference; not enforced here)
-
   const { searchParams } = new URL(req.url);
   const lat = searchParams.get("lat");
   const lon = searchParams.get("lon");
-  const category = searchParams.get("category") || "library";
-  const radius = searchParams.get("radius") || "10000";
+  const rawCategory = searchParams.get("category") || "library";
+  const rawRadius = searchParams.get("radius") || "10000";
 
-  if (!lat || !lon) {
-    return NextResponse.json({ error: "lat and lon required" }, { status: 400 });
+  // --- Input Validation ---
+  if (!isValidLat(lat)) {
+    return NextResponse.json({ error: "Invalid latitude" }, { status: 400 });
   }
+  if (!isValidLon(lon)) {
+    return NextResponse.json({ error: "Invalid longitude" }, { status: 400 });
+  }
+  // Whitelist category to prevent injection into OSM/Google queries
+  const category = ALLOWED_CATEGORIES.has(rawCategory) ? rawCategory : "library";
+  // Clamp radius to safe range
+  const radius = String(Math.min(Math.max(Number(rawRadius) || 10000, 500), 20000));
 
   try {
-    const googleData = await fetchFromGoogle(lat, lon, category, radius);
+    const googleData = await fetchFromGoogle(lat!, lon!, category, radius);
     if (googleData) {
       return NextResponse.json(googleData, {
         headers: { "Cache-Control": "s-maxage=300, stale-while-revalidate=60" },
@@ -167,12 +173,15 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const osmData = await fetchFromOsm(lat, lon, category, radius);
+    const osmData = await fetchFromOsm(lat!, lon!, category, radius);
     return NextResponse.json(osmData, {
       headers: { "Cache-Control": "s-maxage=300, stale-while-revalidate=60" },
     });
-  } catch (e: unknown) {
-    const message = e instanceof Error ? e.message : "Unknown places error";
-    return NextResponse.json({ error: message, places: [] }, { status: 500 });
+  } catch {
+    // Generic error — never leak internal details to client
+    return NextResponse.json(
+      { error: "Unable to fetch places. Please try again.", places: [] },
+      { status: 500 }
+    );
   }
 }

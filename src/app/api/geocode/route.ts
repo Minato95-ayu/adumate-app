@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const GOOGLE_KEY = process.env.GOOGLE_MAPS_API_KEY || process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+// SECURITY: Server-side only — NEVER use NEXT_PUBLIC_ here (it leaks into browser bundle)
+const GOOGLE_KEY = process.env.GOOGLE_MAPS_API_KEY;
 
 async function geocodePhoton(city: string) {
   const url = new URL("https://photon.komoot.io/api/");
@@ -69,8 +70,15 @@ async function geocodeOsm(city: string) {
 export async function GET(req: NextRequest) {
   // Public endpoint — no auth required for geocoding
 
-  const city = new URL(req.url).searchParams.get("city");
-  if (!city) return NextResponse.json({ error: "city required" }, { status: 400 });
+  const rawCity = new URL(req.url).searchParams.get("city");
+  if (!rawCity) return NextResponse.json({ error: "city required" }, { status: 400 });
+
+  // --- Input Sanitization ---
+  // Trim, limit length, allow only letters/numbers/spaces/commas/hyphens
+  const city = rawCity.trim().slice(0, 100).replace(/[^a-zA-Z0-9\s,\-\.]/g, "");
+  if (city.length < 2) {
+    return NextResponse.json({ error: "Invalid city name" }, { status: 400 });
+  }
 
   try {
     const photonResult = await geocodePhoton(city);
@@ -90,8 +98,8 @@ export async function GET(req: NextRequest) {
     const osmResult = await geocodeOsm(city);
     if (!osmResult) return NextResponse.json({ error: "City not found" }, { status: 404 });
     return NextResponse.json(osmResult);
-  } catch (e: unknown) {
-    const message = e instanceof Error ? e.message : "Unknown geocode error";
-    return NextResponse.json({ error: message }, { status: 500 });
+  } catch {
+    // Generic error — never leak internal details to client
+    return NextResponse.json({ error: "Unable to geocode. Please try again." }, { status: 500 });
   }
 }
