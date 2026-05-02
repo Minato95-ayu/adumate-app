@@ -82,41 +82,7 @@ export async function POST(req: Request) {
       content: m.content,
     }));
 
-    // --- PROVIDER 1: Claude 3.5 Sonnet (Best quality) ---
-    async function tryClaude() {
-      if (!keys.openRouter) throw new Error("No OpenRouter Key");
-      const messages = [
-        { role: "system", content: SYSTEM_PROMPT },
-        ...chatHistory,
-        {
-          role: "user",
-          content:
-            fileData && !isPdf
-              ? [
-                  { type: "text", text: userPrompt || "Analyze this image." },
-                  { type: "image_url", image_url: { url: fileData } },
-                ]
-              : userPrompt,
-        },
-      ];
-      const resp = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${keys.openRouter}`,
-          "HTTP-Referer": "https://adumate.in",
-          "X-Title": "Adumate Vidwan AI",
-        },
-        body: JSON.stringify({ model: "anthropic/claude-3.5-sonnet", messages, max_tokens: 2048 }),
-      });
-      const data = await resp.json();
-      if (data.error) throw new Error(`Claude: ${data.error.message}`);
-      const text = data.choices?.[0]?.message?.content;
-      if (!text) throw new Error("Claude: No content");
-      return { text, provider: "Claude 3.5 Sonnet" };
-    }
-
-    // --- PROVIDER 2: Gemini 1.5 Pro (with real Google Search) ---
+    // --- PROVIDER 1: Gemini 1.5 Pro/Flash (with Google Search) ---
     async function tryGemini(modelName = "gemini-1.5-pro") {
       if (!keys.gemini) throw new Error("No Gemini Key");
       const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${keys.gemini}`;
@@ -159,35 +125,7 @@ export async function POST(req: Request) {
       return { text, provider: `Gemini 1.5 ${modelName.includes("pro") ? "Pro" : "Flash"}` };
     }
 
-    // --- PROVIDER 3: Perplexity (Real-time web search) ---
-    async function tryPerplexity() {
-      if (!keys.openRouter) throw new Error("No OpenRouter Key");
-      const resp = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${keys.openRouter}`,
-          "HTTP-Referer": "https://adumate.in",
-          "X-Title": "Adumate Vidwan AI",
-        },
-        body: JSON.stringify({
-          model: "perplexity/llama-3.1-sonar-large-128k-online",
-          messages: [
-            { role: "system", content: SYSTEM_PROMPT + "\nProvide verified source URLs for all factual claims." },
-            ...chatHistory,
-            { role: "user", content: userPrompt },
-          ],
-          max_tokens: 2048,
-        }),
-      });
-      const data = await resp.json();
-      if (data.error) throw new Error(`Perplexity: ${data.error.message}`);
-      const text = data.choices?.[0]?.message?.content;
-      if (!text) throw new Error("Perplexity: No content");
-      return { text, provider: "Perplexity Sonar (Live Web)" };
-    }
-
-    // --- PROVIDER 4: Groq — Llama 3.3 70B (Fast fallback) ---
+    // --- PROVIDER 2: Groq — Llama 3.3 70B (Primary) ---
     async function tryGroq() {
       if (!keys.groq) throw new Error("No Groq Key");
       const resp = await fetch("https://api.groq.com/openai/v1/chat/completions", {
@@ -283,50 +221,50 @@ export async function POST(req: Request) {
 
 
     // ============================================================
-    // SMART EXECUTION CHAIN — Limit-Aware Priority
+    // SMART EXECUTION CHAIN — Available APIs Only
     // ============================================================
     //
-    // TIER 1 — HIGH LIMITS (Use first, always available):
-    //   Groq        → 30 RPM, ~14,400 req/day  ← BEST for normal use
-    //   Gemini Flash → 15 RPM, 1,500 req/day   ← Great quality + speed
-    //   DeepSeek    → ~500 req/day              ← Strong reasoning
+    // ✅ TIER 1 — HIGH LIMITS (Primary workhorse):
+    //   Groq (Llama 3.3 70B) → 30 RPM, 14,400/day  ← FASTEST
+    //   Gemini 1.5 Flash     → 15 RPM, 1,500/day   ← GOOD QUALITY
     //
-    // TIER 2 — MEDIUM LIMITS (Quality boost, use when Tier 1 fails):
-    //   Claude 3.5  → OpenRouter credits        ← Best quality
-    //   Gemini Pro  → 50 req/DAY only!          ← Reserve for complex
-    //   Mistral     → 1 RPM free                ← Slow fallback
+    // ✅ TIER 2 — MEDIUM LIMITS (Quality boost):
+    //   DeepSeek V3          → ~500/day             ← STRONG REASONING
+    //   AICC (GPT-4o Mini)   → Moderate limit       ← SMART + RELIABLE
+    //   Gemini 1.5 Pro       → 50/day ONLY!         ← SAVE FOR SEARCH
     //
-    // TIER 3 — BACKUP (Always available, lower quality):
-    //   Cloudflare  → 10,000 req/day            ← Solid backup
-    //   HuggingFace → Unlimited but slow        ← Last resort
+    // ✅ TIER 3 — BACKUP:
+    //   Mistral Large        → 1 RPM free           ← SLOW
+    //   Cloudflare AI        → 10,000/day           ← ALWAYS ON
+    //   HuggingFace          → Unlimited (slow)     ← LAST RESORT
     //
-    // SEARCH QUERIES: Perplexity (live web) → then normal chain
+    // ❌ Claude — No API key
+    // ❌ Perplexity — No API key
     // ============================================================
 
     let providerChain;
 
     if (isSearchNeeded) {
-      // For news/real-time: Perplexity first (live web), then Gemini Pro (Google Search)
+      // Search/News: Gemini Pro first (has Google Search), then rest
       providerChain = [
-        tryPerplexity,   // Live web search — best for current events
-        tryGemini,       // Gemini with Google Search retrieval
+        tryGemini,       // Gemini Pro with Google Search retrieval — BEST for real-time
         tryGroq,         // Fast, high limit
-        tryClaude,       // Quality fallback
-        tryDeepSeek,
+        tryDeepSeek,     // Strong reasoning
+        tryAICC,         // GPT-4o Mini quality
         tryMistral,
         tryCF,
         tryHF,
       ];
     } else {
-      // Normal queries: High-limit models first, quality models as backup
+      // Normal queries: High-limit models first
       providerChain = [
-        tryGroq,         // 🥇 PRIMARY: 30 RPM, 14k/day, Llama 3.3 70B — excellent
-        tryGemini,       // 🥈 SECONDARY: Flash=1500/day, good quality
-        tryDeepSeek,     // 🥉 TERTIARY: Strong reasoning, ~500/day
-        tryClaude,       // 💎 QUALITY: Best but limited credits
-        tryMistral,      // 🔄 FALLBACK: 1 RPM, decent
+        tryGroq,         // 🥇 PRIMARY: 30 RPM, 14k/day, Llama 3.3 70B
+        tryGemini,       // 🥈 SECONDARY: Flash=1500/day, solid quality
+        tryDeepSeek,     // 🥉 TERTIARY: ~500/day, strong reasoning
+        tryAICC,         // 💡 GPT-4o Mini quality when others fail
+        tryMistral,      // 🔄 FALLBACK: 1 RPM
         tryCF,           // 🔄 BACKUP: 10k/day, always on
-        tryHF,           // 🆘 LAST RESORT: Unlimited but slow
+        tryHF,           // 🆘 LAST RESORT: unlimited, slow
       ];
     }
 
