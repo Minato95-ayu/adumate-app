@@ -33,25 +33,30 @@ Today's date: ${TODAY}
 - Use bullet points ONLY when listing 3+ distinct items
 - For explanations, use flowing paragraphs — more readable than bullet soup
 - Use --- as section divider only for long multi-section responses
-- Emojis: 1-2 max per response, only when they add meaning
+## FORMATTING — SITUATION AWARE (Very Important):
+Adapt your format to the question TYPE:
+- **Casual/greeting** ("hello", "kya haal") → 1-2 warm lines, NO formatting, conversational
+- **Simple fact** ("capital of France?") → 1-2 sentences, direct answer first
+- **Explanation needed** → 2-3 flowing paragraphs, use bold for key terms, NO bullet soup
+- **Comparison/list** → THEN use bullet points or table
+- **Deep analysis/essay** → Sections with ### heading, paragraphs, 1-2 key bullet lists max
+- **Code request** → Code block + brief explanation
+- **Image in file** → Describe what you see in detail, then answer the question
+- **PDF in file** → Extract key points, summarize intelligently
 
-## WHAT TO AVOID:
-- ❌ Generic "subject to change" fake links — either give REAL verified URLs or none at all
-- ❌ Over-formatted responses with too many bullet points for simple questions
-- ❌ Repeating the question back to the user
-- ❌ Saying "Great question!" or sycophantic openers
-- ❌ Hallucinating specific statistics without noting uncertainty
-
-## RESPONSE LENGTH:
-- Simple greetings/casual: 2-4 lines max
-- Factual questions: 1-3 paragraphs with key insight
-- Deep analysis/essay: Use full structure with sections
-- Always end with something that sparks further thinking
+## STRICT RULES:
+- ❌ NO fake "subject to change" links — real URL ya kuch nahi
+- ❌ NO bullet points for casual conversation
+- ❌ NO sycophantic openers ("Great question!", "Of course!")
+- ❌ NO hallucinated statistics
+- ✅ End every response with 1 thought-provoking insight or follow-up question
+- ✅ Hinglish: natural mix, never forced
+- ✅ Max 1-2 emojis only if they add meaning
 
 ## ADUMATE CONTEXT:
 ${APP_CONTEXT}
 
-Remember: You are Vidwan AI — sharp, warm, intellectually fearless. Make every response memorable.
+Remember: You are Vidwan AI — sharp, warm, intellectually fearless. Match your energy to the question.
 `;
 
 export async function POST(req: Request) {
@@ -75,7 +80,21 @@ export async function POST(req: Request) {
     };
 
     const isPdf = fileType?.includes("pdf");
+    const hasFile = !!fileData;
     const isSearchNeeded = /search|news|latest|today|current|2024|2025|2026|real.?time|live|update/i.test(userPrompt || "");
+    const isImageGenRequest = /image bana|generate image|ek image|draw|create image|photo bana|picture bana|ek photo|design bana|poster bana|banner bana|logo bana/i.test(userPrompt || "");
+
+    // 🎨 IMAGE GENERATION — Free via Pollinations.ai (no API key needed!)
+    if (isImageGenRequest) {
+      const imagePrompt = encodeURIComponent(
+        (userPrompt || "beautiful abstract art")
+          .replace(/image bana(o)?|generate image|ek image|draw|create image|photo bana(o)?|picture bana(o)?|design bana(o)?|poster bana(o)?|banner bana(o)?|logo bana(o)?/gi, "")
+          .trim() || "beautiful creative artwork, high quality, detailed"
+      );
+      const imageUrl = `https://image.pollinations.ai/prompt/${imagePrompt}?width=1024&height=768&nologo=true&seed=${Date.now()}`;
+      const responseText = `Yeh raha! 🎨\n\n![Generated Image](${imageUrl})\n\n**Prompt used:** ${decodeURIComponent(imagePrompt)}\n\nAgar alag style ya scene chahiye ho toh describe karo — main dobara generate kar deta hoon!`;
+      return NextResponse.json({ text: responseText, provider: "Pollinations AI (Image)" });
+    }
 
     const chatHistory = history.map((m: { role: string; content: string }) => ({
       role: m.role,
@@ -244,29 +263,41 @@ export async function POST(req: Request) {
 
     let providerChain;
 
-    if (isSearchNeeded) {
-      // Search/News: Gemini Pro first (has Google Search), then rest
+    if (hasFile) {
+      // 📎 FILE (image/PDF): Gemini MUST be first — only model that supports vision + PDF
       providerChain = [
-        tryGemini,       // Gemini Pro with Google Search retrieval — BEST for real-time
-        tryGroq,         // Fast, high limit
-        tryDeepSeek,     // Strong reasoning
-        tryAICC,         // GPT-4o Mini quality
+        tryGemini,       // ✅ Supports image + PDF via inline_data
+        tryDeepSeek,     // Text fallback (won't see file but will try with prompt)
+        tryAICC,
+        tryGroq,
+        tryMistral,
+        tryCF,
+        tryHF,
+      ];
+    } else if (isSearchNeeded) {
+      // 🔍 Search/News: Gemini first (has Google Search retrieval)
+      providerChain = [
+        tryGemini,       // Gemini Pro with Google Search
+        tryGroq,
+        tryDeepSeek,
+        tryAICC,
         tryMistral,
         tryCF,
         tryHF,
       ];
     } else {
-      // Normal queries: High-limit models first
+      // 💬 Normal queries: High-limit models first
       providerChain = [
-        tryGroq,         // 🥇 PRIMARY: 30 RPM, 14k/day, Llama 3.3 70B
-        tryGemini,       // 🥈 SECONDARY: Flash=1500/day, solid quality
-        tryDeepSeek,     // 🥉 TERTIARY: ~500/day, strong reasoning
-        tryAICC,         // 💡 GPT-4o Mini quality when others fail
-        tryMistral,      // 🔄 FALLBACK: 1 RPM
-        tryCF,           // 🔄 BACKUP: 10k/day, always on
-        tryHF,           // 🆘 LAST RESORT: unlimited, slow
+        tryGroq,         // 🥇 30 RPM, 14k/day, Llama 3.3 70B
+        tryGemini,       // 🥈 Flash=1500/day
+        tryDeepSeek,     // 🥉 ~500/day
+        tryAICC,         // 💡 GPT-4o Mini
+        tryMistral,      // 🔄 1 RPM fallback
+        tryCF,           // 🔄 10k/day backup
+        tryHF,           // 🆘 Last resort
       ];
     }
+
 
     let lastError = "";
     for (const providerFn of providerChain) {

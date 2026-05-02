@@ -40,7 +40,23 @@ const formatMessage = (text: string) => {
     return (
       <div key={index} className="space-y-3">
         {lines.map((line, lineIdx) => {
+          // Image markdown: ![alt](url)
+          const imgMatch = line.match(/^!\[([^\]]*)\]\(([^)]+)\)$/);
+          if (imgMatch) {
+            return (
+              <div key={lineIdx} className="my-4">
+                <img
+                  src={imgMatch[2]}
+                  alt={imgMatch[1] || "Generated image"}
+                  className="rounded-2xl max-w-full border border-white/10 shadow-2xl"
+                  style={{ maxHeight: "400px", objectFit: "contain" }}
+                />
+              </div>
+            );
+          }
+
           // Horizontal Rule
+
           if (line.trim() === "---") {
             return <hr key={lineIdx} className="my-6 border-white/10" />;
           }
