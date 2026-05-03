@@ -61,10 +61,31 @@ Remember: You are Vidwan AI — sharp, warm, intellectually fearless. Match your
 
 export async function POST(req: Request) {
   try {
+    // ✅ SECURITY: Firebase Auth Check
+    // Vidwan uses logged-in user's token for access control
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      return NextResponse.json({ error: "Login required to use Vidwan AI" }, { status: 401 });
+    }
+    try {
+      const { adminAuth } = await import("@/lib/firebase-admin");
+      await adminAuth.verifyIdToken(authHeader.split("Bearer ")[1]);
+    } catch {
+      return NextResponse.json({ error: "Session expired. Please login again." }, { status: 401 });
+    }
+
     const { prompt: userPrompt, fileData, fileType, history = [] } = await req.json();
 
     if (!userPrompt && !fileData) {
       return NextResponse.json({ error: "No input provided" }, { status: 400 });
+    }
+
+    // ✅ SECURITY: Input size limits — prevent DoS
+    if (userPrompt && userPrompt.length > 8000) {
+      return NextResponse.json({ error: "Prompt too long (max 8000 chars)" }, { status: 400 });
+    }
+    if (fileData && fileData.length > 7 * 1024 * 1024) { // ~5MB file in base64
+      return NextResponse.json({ error: "File too large (max 5MB)" }, { status: 413 });
     }
 
     const keys = {
