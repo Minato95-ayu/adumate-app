@@ -6,6 +6,8 @@ import { Send, User, Sparkles, Trash2, Loader2, Bot, Plus, X, Paperclip, FileTex
 import Image from "next/image";
 import UserAvatar from "./UserAvatar";
 import BrandIcon from "./BrandIcon";
+import { auth } from "@/lib/firebase";
+import { onAuthStateChanged } from "firebase/auth";
 
 interface Message {
   role: "user" | "assistant";
@@ -119,7 +121,6 @@ const processLine = (line: string) => {
     });
   });
 };
-
 export default function VidwanChat() {
   const [messages, setMessages] = useState<Message[]>([
     { role: "assistant", content: "Namaste! Main Vidwan AI hoon. Aaj hum kis topic par multitasking karein?" },
@@ -128,9 +129,23 @@ export default function VidwanChat() {
   const [isLoading, setIsLoading] = useState(false);
   const [selectedFile, setSelectedFile] = useState<{data: string, type: string, name: string} | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  
+  const [user, setUser] = useState<any>(null);
+  const [userName, setUserName] = useState("Guest");
+
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+      setUser(firebaseUser);
+      if (firebaseUser) {
+        setUserName(firebaseUser.displayName || firebaseUser.email || "Student");
+      } else {
+        setUserName("Guest");
+      }
+    });
+    return () => unsubscribe();
+  }, []);
 
   useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
@@ -165,7 +180,6 @@ export default function VidwanChat() {
     setIsLoading(true);
 
     try {
-      const { auth } = await import("@/lib/firebase");
       const token = await auth.currentUser?.getIdToken();
       
       const response = await fetch("/api/vidwan", {
@@ -225,8 +239,8 @@ export default function VidwanChat() {
            </div>
            <div className="mt-auto pt-4 border-t border-white/5">
               <div className="p-3 rounded-xl bg-white/5 text-slate-400 flex items-center gap-3">
-                 <UserAvatar name="Ayush Kaushik" size="sm" />
-                 <span className="text-xs font-bold truncate">Ayush Kaushik</span>
+                 <UserAvatar name={userName} size="sm" />
+                 <span className="text-xs font-bold truncate">{userName}</span>
               </div>
            </div>
         </div>
@@ -252,7 +266,7 @@ export default function VidwanChat() {
                 <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
                   <div className={`flex gap-4 w-full ${m.role === "user" ? "flex-row-reverse" : "flex-row"}`}>
                     <div className={`w-10 h-10 md:w-12 md:h-12 flex items-center justify-center shrink-0 mt-2`}>
-                    {m.role === "user" ? <UserAvatar name="Ayush Kaushik" /> : <BrandIcon text="V" size={48} />}
+                    {m.role === "user" ? <UserAvatar name={userName} /> : <BrandIcon text="V" size={48} />}
                   </div>
                     <div className="flex-1">
                       {m.filePreview && (
