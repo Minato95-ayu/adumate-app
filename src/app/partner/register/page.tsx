@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { BookOpen, Home, UtensilsCrossed, BedDouble, GraduationCap, Briefcase, ChevronRight, ArrowLeft, CheckCircle, MapPin, Clock, IndianRupee, Upload, Phone, Globe, User } from "lucide-react";
 
 const SERVICE_TYPES = [
@@ -52,13 +53,13 @@ export default function PartnerRegister() {
     <div className="min-h-screen bg-[#050a14] text-white px-4 py-8">
       {/* Header */}
       <div className="max-w-4xl mx-auto">
-        <div className="flex items-center gap-4 mb-8">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-500 to-amber-400 flex items-center justify-center font-black text-lg">A</div>
+        <Link href="/" className="inline-flex items-center gap-4 mb-8 group hover:opacity-80 transition-opacity">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-500 to-amber-400 flex items-center justify-center font-black text-lg shadow-lg group-hover:shadow-orange-500/30 transition-all">A</div>
           <div>
-            <p className="font-black text-white">Adumate Partner</p>
-            <p className="text-xs text-slate-500">Register your business</p>
+            <p className="font-black text-white group-hover:text-orange-400 transition-colors">Adumate Partner</p>
+            <p className="text-xs text-slate-500 flex items-center gap-1">← Back to home</p>
           </div>
-        </div>
+        </Link>
 
         {/* Progress bar */}
         <div className="flex items-center gap-2 mb-10">
