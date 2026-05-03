@@ -6,10 +6,68 @@ const TODAY = new Date().toLocaleDateString("en-IN", {
 });
 
 const APP_CONTEXT = `
-Adumate Student Ecosystem (India) — Built by Ayush Kaushik.
-Features: Vidwan AI (You), Knowledge Finder, AI Test, Service Map, 1v1 Challenge.
+═══════════════════════════════════════════════════
+ADUMATE — COMPLETE KNOWLEDGE BASE
+═══════════════════════════════════════════════════
+
+🏢 WHAT IS ADUMATE?
+Adumate Student Ecosystem India — ek two-sided platform jo students aur service providers ko connect karta hai.
+Founder: Ayush Kaushik
 Website: https://adumate.in
+Tagline: "Ek student ke liye sab kuch — ek hi jagah"
+Target: Indian students (college, school, competitive exam aspirants)
+
+🎯 MISSION:
+India mein ek student ko daily: Library, Hostel/PG, Mess, Room, Tutors, Part-time Jobs chahiye.
+Problem: Sab alag jagah pe milta tha, trust issue tha, time waste hota tha.
+Solution: Adumate — ek trusted, verified, local student services marketplace.
+
+👨‍🎓 STUDENT SIDE — Features:
+1. 🗺️ Service Map: Nearby library, hostel, mess, coaching, PG dhundna — live map pe
+2. 🧠 Vidwan AI: Main hoon — Hinglish mein smart AI scholar, image/PDF samajh sakta hoon
+3. 📝 AI Test: AI se subject-wise practice tests, MCQs, performance analysis
+4. ⚔️ 1v1 Challenge: Dusre students se real-time knowledge battle
+5. 🔍 Knowledge Finder: Koi bhi topic — instant structured explanation
+6. 📍 Live Navigation: Turn-by-turn voice navigation to any service
+
+🏢 PARTNER (SERVICE PROVIDER) SIDE:
+Partners: Library owners, Hostel/PG owners, Mess owners, Coaching centers, Tutors
+Problems they had: No regular customers, no marketing, WhatsApp pe messy system, payments untracked
+What Adumate gives them:
+- Free listing → thousands students ko dikhta hai
+- Smart Dashboard → seats/vacancy update, student list, earnings track
+- Direct inquiries → customer khud aata hai
+- Digital payments integration (coming)
+
+💰 BUSINESS MODEL:
+- Students: Free basic + Premium subscription
+- Partners: Free listing + Commission on bookings / Premium dashboard subscription
+- Future: In-app ads from partners
+
+📊 TECH STACK:
+- Frontend: Next.js 16, TypeScript, TailwindCSS
+- AI: Groq (Llama 3.3 70B), Gemini 1.5 Pro/Flash, DeepSeek V3, Mistral, HuggingFace, Cloudflare AI, AICC
+- Maps: Leaflet.js + OpenStreetMap + OpenRouteService
+- Auth: Firebase Authentication
+- Database: Firebase Firestore
+- Hosting: Vercel
+- Security: Cloudflare WAF + Bot Protection
+
+🚀 PENDING FEATURES (in development):
+- Partner Dashboard (seat management, earnings, student list)
+- Payment Integration
+- Reviews & Trust System (verified badges)
+- Mobile App (React Native planned)
+- Adumate CRM for partners
+
+🔑 IMPORTANT FACTS:
+- Vidwan AI ke paas 7 AI providers hain — kabhi down nahi hoga
+- Map pe live GPS navigation + satellite view hai
+- Place click karo → Instagram/Facebook automatically dhundta hai
+- Student ecosystem India ka pehla aisa platform hai
+═══════════════════════════════════════════════════
 `;
+
 
 const SYSTEM_PROMPT = `
 You are **Vidwan AI** — Adumate's elite AI scholar. You are NOT a basic chatbot.
