@@ -174,13 +174,13 @@ export async function GET(req: NextRequest) {
     fetchOsmSocial(lat, lon, name),
     fetchWikipedia(name, lat, lon),
     fetchDdgSocial(name, city),
-    website ? fetchWebsiteSocials(website) : Promise.resolve({}),
+    website ? fetchWebsiteSocials(website) : Promise.resolve({} as Partial<PlaceInfo>),
   ]);
 
-  const osm = osmData.status === "fulfilled" ? osmData.value : {} as Partial<PlaceInfo>;
-  const wiki = wikiData.status === "fulfilled" ? wikiData.value : {} as Partial<PlaceInfo>;
-  const ddg = ddgData.status === "fulfilled" ? ddgData.value : {} as Partial<PlaceInfo>;
-  const web = webData.status === "fulfilled" ? webData.value : {} as Partial<PlaceInfo>;
+  const osm  = (osmData.status  === "fulfilled" ? osmData.value  : {}) as Partial<PlaceInfo>;
+  const wiki = (wikiData.status === "fulfilled" ? wikiData.value : {}) as Partial<PlaceInfo>;
+  const ddg  = (ddgData.status  === "fulfilled" ? ddgData.value  : {}) as Partial<PlaceInfo>;
+  const web  = (webData.status  === "fulfilled" ? webData.value  : {}) as Partial<PlaceInfo>;
 
   // Merge — OSM > Website > DDG (priority order)
   const merged: PlaceInfo = {
