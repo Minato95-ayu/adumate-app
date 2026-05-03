@@ -7,7 +7,32 @@ import {
 } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import { MapPin, Phone, Globe, Navigation, Layers, Car, PersonStanding, Bike, Volume2, VolumeX, ChevronRight, X, Locate, Instagram, Youtube, Facebook, Twitter, Clock, Info, ExternalLink } from "lucide-react";
+import { MapPin, Phone, Globe, Navigation, Layers, Car, PersonStanding, Bike, Volume2, VolumeX, ChevronRight, X, Locate, Clock, Info, ExternalLink } from "lucide-react";
+
+// Inline social icons (lucide-react installed version lacks these)
+const Instagram = ({ size = 16, className = "" }) => (
+  <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+    <rect x="2" y="2" width="20" height="20" rx="5" ry="5"/>
+    <circle cx="12" cy="12" r="4"/>
+    <circle cx="17.5" cy="6.5" r="0.5" fill="currentColor"/>
+  </svg>
+);
+const Facebook = ({ size = 16, className = "" }) => (
+  <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+    <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/>
+  </svg>
+);
+const Youtube = ({ size = 16, className = "" }) => (
+  <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+    <path d="M22.54 6.42A2.78 2.78 0 0 0 20.6 4.46C18.88 4 12 4 12 4s-6.88 0-8.6.46A2.78 2.78 0 0 0 1.46 6.42 29 29 0 0 0 1 12a29 29 0 0 0 .46 5.58A2.78 2.78 0 0 0 3.4 19.54C5.12 20 12 20 12 20s6.88 0 8.6-.46a2.78 2.78 0 0 0 1.94-1.96A29 29 0 0 0 23 12a29 29 0 0 0-.46-5.58z"/>
+    <polygon points="9.75 15.02 15.5 12 9.75 8.98 9.75 15.02" fill="currentColor" stroke="none"/>
+  </svg>
+);
+const Twitter = ({ size = 16, className = "" }) => (
+  <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+    <path d="M23 3a10.9 10.9 0 0 1-3.14 1.53A4.48 4.48 0 0 0 22.43.36a9 9 0 0 1-2.85 1.09A4.52 4.52 0 0 0 11.5 8a12.8 12.8 0 0 1-9.29-4.71 4.52 4.52 0 0 0 1.4 6.04A4.48 4.48 0 0 1 1.64 9v.06a4.52 4.52 0 0 0 3.62 4.43 4.52 4.52 0 0 1-2.04.08 4.52 4.52 0 0 0 4.22 3.14A9.07 9.07 0 0 1 1 19.54 12.78 12.78 0 0 0 7.88 21.5c8.26 0 12.78-6.84 12.78-12.78 0-.2 0-.39-.01-.58A9.11 9.11 0 0 0 23 3z"/>
+  </svg>
+);
 import { Provider } from "@/data/providers";
 import type { PlaceInfo } from "@/app/api/place-info/route";
 
