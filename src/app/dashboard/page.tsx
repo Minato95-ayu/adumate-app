@@ -161,22 +161,31 @@ export default function Dashboard() {
         {user ? (
           /* LOGGED IN HERO */
           <div className="flex justify-between items-start">
-            <div>
-              <h1 className="text-2xl sm:text-3xl font-extrabold text-white">
-                Hi {userName.split(" ")[0]} 👋
-              </h1>
-              <p className="text-muted-foreground text-xs sm:text-sm mt-1">
-                {examLabel ? `Preparing for ${examLabel.icon} ${examLabel.label}` : "Apna exam target set karo 👇"}
-              </p>
+            {/* Left: Logo + Greeting */}
+            <div className="flex items-center gap-3">
+              <Link href="/" className="flex items-center gap-2 group shrink-0">
+                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-orange-500 to-amber-400 flex items-center justify-center shadow-lg group-hover:shadow-orange-500/30 transition-all">
+                  <span className="font-black text-white text-base">A</span>
+                </div>
+              </Link>
+              <div>
+                <h1 className="text-2xl sm:text-3xl font-extrabold text-white">
+                  Hi {userName.split(" ")[0]} 👋
+                </h1>
+                <p className="text-muted-foreground text-xs sm:text-sm mt-0.5">
+                  {examLabel ? `Preparing for ${examLabel.icon} ${examLabel.label}` : "Apna exam target set karo 👇"}
+                </p>
+              </div>
             </div>
+            {/* Right: Bells + Profile */}
             <div className="flex items-center gap-2 sm:gap-3">
               <motion.button whileHover={{ scale: 1.1 }} className="bg-white/5 p-2 sm:p-3 rounded-full hover:bg-white/10 relative">
                 <Bell size={20} className="text-foreground" />
                 <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-primary rounded-full animate-pulse" />
               </motion.button>
-              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-primary/20 border border-primary/30 rounded-full flex items-center justify-center">
+              <Link href="/" className="w-8 h-8 sm:w-10 sm:h-10 bg-primary/20 border border-primary/30 rounded-full flex items-center justify-center hover:bg-primary/30 transition-all" title="Home">
                 <User size={16} className="text-primary" />
-              </div>
+              </Link>
             </div>
           </div>
         ) : (
