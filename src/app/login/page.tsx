@@ -49,11 +49,11 @@ function LoginForm() {
           createdAt: new Date().toISOString()
         });
         
-        if (roleQuery === "partner") router.push("/partner");
+        if (roleQuery === "partner") router.push("/partner/register");
         else router.push("/dashboard");
       } else {
         const userData = userSnap.data();
-        if (userData.role === "partner") router.push("/partner");
+        if (userData.role === "partner") router.push("/partner/dashboard");
         else if (userData.role === "admin") router.push("/admin");
         else router.push("/dashboard");
       }
