@@ -7,8 +7,9 @@ import {
 } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import { MapPin, Phone, Globe, Navigation, Layers, Car, PersonStanding, Bike, Volume2, VolumeX, ChevronRight, X, Locate } from "lucide-react";
+import { MapPin, Phone, Globe, Navigation, Layers, Car, PersonStanding, Bike, Volume2, VolumeX, ChevronRight, X, Locate, Instagram, Youtube, Facebook, Twitter, Clock, Info, ExternalLink } from "lucide-react";
 import { Provider } from "@/data/providers";
+import type { PlaceInfo } from "@/app/api/place-info/route";
 
 type Place = Provider & {
   phone?: string; website?: string; about?: string;
@@ -133,6 +134,11 @@ export default function Map({ providers, center = { lat: 28.6139, lng: 77.209 },
   const [mapLayer, setMapLayer] = useState<MapLayer>("street");
   const [showLayerPicker, setShowLayerPicker] = useState(false);
 
+  // Place info side panel
+  const [placeInfo, setPlaceInfo] = useState<PlaceInfo | null>(null);
+  const [placeInfoLoading, setPlaceInfoLoading] = useState(false);
+  const [showPanel, setShowPanel] = useState(false);
+
   // Live location
   const [livePos, setLivePos] = useState<{ lat: number; lng: number } | null>(null);
   const [liveHeading, setLiveHeading] = useState<number | undefined>(undefined);
@@ -144,6 +150,29 @@ export default function Map({ providers, center = { lat: 28.6139, lng: 77.209 },
   const [voiceOn, setVoiceOn] = useState(true);
   const [currentStep, setCurrentStep] = useState(0);
   const [showSteps, setShowSteps] = useState(false);
+
+  // ── Fetch place info (social + wiki) ─────────────────────────────────
+  const fetchPlaceInfo = useCallback(async (place: Place) => {
+    setPlaceInfo(null);
+    setPlaceInfoLoading(true);
+    setShowPanel(true);
+    try {
+      const params = new URLSearchParams({
+        name: place.name,
+        lat: String(place.lat),
+        lon: String(place.lng),
+        ...(place.website ? { website: place.website } : {}),
+        city: "India",
+      });
+      const res = await fetch(`/api/place-info?${params}`);
+      const data: PlaceInfo = await res.json();
+      setPlaceInfo(data);
+    } catch {
+      setPlaceInfo({ name: place.name });
+    } finally {
+      setPlaceInfoLoading(false);
+    }
+  }, []);
 
   // ── Live GPS ──────────────────────────────────────────────────────────
   const startTracking = useCallback(() => {
@@ -243,7 +272,7 @@ export default function Map({ providers, center = { lat: 28.6139, lng: 77.209 },
         {providers.map((p, i) => (
           <Marker key={p.id} position={[p.lat, p.lng]}
             icon={placeIcon(String.fromCharCode(65 + (i % 26)))}
-            eventHandlers={{ click: () => onSelectPlace?.(p) }}>
+            eventHandlers={{ click: () => { onSelectPlace?.(p); fetchPlaceInfo(p); } }}>
             <Popup>
               <div className="min-w-[200px]">
                 <p className="text-sm font-bold text-slate-900">{p.name}</p>
@@ -253,7 +282,7 @@ export default function Map({ providers, center = { lat: 28.6139, lng: 77.209 },
                   {p.phone && <a href={`tel:${p.phone}`} className="inline-flex items-center gap-1 rounded-lg bg-slate-900 px-2 py-1.5 text-xs font-bold text-white"><Phone size={10} />Call</a>}
                   {p.website && <a href={ensureUrl(p.website)} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 rounded-lg border px-2 py-1.5 text-xs font-bold"><Globe size={10} />Web</a>}
                 </div>
-                <button onClick={() => { onSelectPlace?.(p); }} className="mt-2 w-full rounded-lg bg-orange-500 px-2 py-1.5 text-xs font-bold text-white">
+                <button onClick={() => { onSelectPlace?.(p); fetchPlaceInfo(p); }} className="mt-2 w-full rounded-lg bg-orange-500 px-2 py-1.5 text-xs font-bold text-white">
                   🧭 Get Route
                 </button>
               </div>
@@ -394,6 +423,140 @@ export default function Map({ providers, center = { lat: 28.6139, lng: 77.209 },
           <p className="text-[10px] font-bold text-slate-400">OSM + ORS Navigation</p>
         </div>
       </div>
+
+      {/* ── PLACE INFO SIDE PANEL ────────────────────────────────────── */}
+      {showPanel && selectedPlace && (
+        <div className="absolute right-0 top-0 h-full w-[min(100%,340px)] z-[600] flex flex-col bg-[#060e1a]/97 border-l border-white/10 backdrop-blur-2xl shadow-2xl overflow-y-auto">
+          {/* Header with image */}
+          <div className="relative shrink-0">
+            {placeInfo?.image
+              ? <img src={placeInfo.image} alt={selectedPlace.name} className="w-full h-36 object-cover" />
+              : <div className="w-full h-24 bg-gradient-to-br from-orange-500/20 to-purple-500/10" />}
+            <div className="absolute inset-0 bg-gradient-to-t from-[#060e1a] via-transparent to-transparent" />
+            <button onClick={() => { setShowPanel(false); onSelectPlace?.(null); }}
+              className="absolute top-3 right-3 rounded-full bg-black/60 p-1.5 text-white hover:bg-black/80 backdrop-blur-xl">
+              <X size={14} />
+            </button>
+            <div className="absolute bottom-3 left-4 right-12">
+              <p className="text-base font-black text-white leading-tight">{selectedPlace.name}</p>
+              <p className="text-[10px] text-slate-400 mt-0.5">{selectedPlace.address || "Student service"}</p>
+            </div>
+          </div>
+
+          <div className="flex-1 p-4 space-y-4">
+            {/* Rating */}
+            <div className="flex items-center gap-2">
+              <span className="text-lg">⭐</span>
+              <span className="text-sm font-bold text-amber-400">{Number(selectedPlace.rating || 0).toFixed(1)}</span>
+              <span className="text-xs text-slate-500">rating</span>
+            </div>
+
+            {/* Loading skeleton */}
+            {placeInfoLoading && (
+              <div className="space-y-2 animate-pulse">
+                {[80, 60, 70, 50].map((w, i) => (
+                  <div key={i} className="h-8 rounded-xl bg-white/5" style={{ width: `${w}%` }} />
+                ))}
+                <p className="text-[10px] text-slate-600 italic">Fetching social media & info...</p>
+              </div>
+            )}
+
+            {/* Social Media */}
+            {!placeInfoLoading && (
+              <div className="space-y-2">
+                <p className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-500">Social Media</p>
+                <div className="space-y-1.5">
+                  {placeInfo?.instagram && (
+                    <a href={placeInfo.instagram} target="_blank" rel="noreferrer"
+                      className="flex items-center gap-3 rounded-xl bg-gradient-to-r from-pink-500/10 to-purple-500/10 border border-pink-500/20 px-3 py-2.5 transition-all hover:border-pink-500/40">
+                      <Instagram size={16} className="text-pink-400 shrink-0" />
+                      <span className="text-xs font-bold text-pink-300 truncate">{placeInfo.instagram.replace("https://instagram.com/", "@")}</span>
+                      <ExternalLink size={10} className="text-slate-600 ml-auto shrink-0" />
+                    </a>
+                  )}
+                  {placeInfo?.facebook && (
+                    <a href={placeInfo.facebook} target="_blank" rel="noreferrer"
+                      className="flex items-center gap-3 rounded-xl bg-blue-500/10 border border-blue-500/20 px-3 py-2.5 transition-all hover:border-blue-500/40">
+                      <Facebook size={16} className="text-blue-400 shrink-0" />
+                      <span className="text-xs font-bold text-blue-300 truncate">{placeInfo.facebook.replace("https://facebook.com/", "")}</span>
+                      <ExternalLink size={10} className="text-slate-600 ml-auto shrink-0" />
+                    </a>
+                  )}
+                  {placeInfo?.youtube && (
+                    <a href={placeInfo.youtube} target="_blank" rel="noreferrer"
+                      className="flex items-center gap-3 rounded-xl bg-red-500/10 border border-red-500/20 px-3 py-2.5 transition-all hover:border-red-500/40">
+                      <Youtube size={16} className="text-red-400 shrink-0" />
+                      <span className="text-xs font-bold text-red-300">YouTube Channel</span>
+                      <ExternalLink size={10} className="text-slate-600 ml-auto shrink-0" />
+                    </a>
+                  )}
+                  {placeInfo?.twitter && (
+                    <a href={placeInfo.twitter} target="_blank" rel="noreferrer"
+                      className="flex items-center gap-3 rounded-xl bg-sky-500/10 border border-sky-500/20 px-3 py-2.5 transition-all hover:border-sky-500/40">
+                      <Twitter size={16} className="text-sky-400 shrink-0" />
+                      <span className="text-xs font-bold text-sky-300">{placeInfo.twitter.replace("https://twitter.com/", "@")}</span>
+                      <ExternalLink size={10} className="text-slate-600 ml-auto shrink-0" />
+                    </a>
+                  )}
+                  {!placeInfoLoading && !placeInfo?.instagram && !placeInfo?.facebook && !placeInfo?.youtube && (
+                    <p className="text-xs text-slate-600 italic px-1">No social accounts found for this place</p>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Contact */}
+            <div className="space-y-1.5">
+              <p className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-500">Contact</p>
+              {(selectedPlace.phone || placeInfo?.phone) && (
+                <a href={`tel:${selectedPlace.phone || placeInfo?.phone}`}
+                  className="flex items-center gap-3 rounded-xl bg-white/5 border border-white/10 px-3 py-2.5 hover:bg-white/10 transition-all">
+                  <Phone size={14} className="text-slate-400 shrink-0" />
+                  <span className="text-xs font-bold text-slate-300">{selectedPlace.phone || placeInfo?.phone}</span>
+                </a>
+              )}
+              {(selectedPlace.website || placeInfo?.website) && (
+                <a href={ensureUrl(selectedPlace.website || placeInfo?.website || "")} target="_blank" rel="noreferrer"
+                  className="flex items-center gap-3 rounded-xl bg-white/5 border border-white/10 px-3 py-2.5 hover:bg-white/10 transition-all">
+                  <Globe size={14} className="text-slate-400 shrink-0" />
+                  <span className="text-xs font-bold text-slate-300 truncate">{(selectedPlace.website || placeInfo?.website || "").replace(/^https?:\/\//, "")}</span>
+                  <ExternalLink size={10} className="text-slate-600 ml-auto shrink-0" />
+                </a>
+              )}
+              {placeInfo?.opening_hours && (
+                <div className="flex items-start gap-3 rounded-xl bg-white/5 border border-white/10 px-3 py-2.5">
+                  <Clock size={14} className="text-slate-400 shrink-0 mt-0.5" />
+                  <span className="text-xs text-slate-300 leading-relaxed">{placeInfo.opening_hours}</span>
+                </div>
+              )}
+            </div>
+
+            {/* Wikipedia */}
+            {placeInfo?.wikipedia && (
+              <div className="space-y-2">
+                <p className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-500 flex items-center gap-1.5">
+                  <Info size={10} /> About
+                </p>
+                <div className="rounded-xl bg-white/5 border border-white/10 p-3">
+                  <p className="text-xs text-slate-300 leading-relaxed line-clamp-5">{placeInfo.wikipedia}</p>
+                  {placeInfo.wikipediaUrl && (
+                    <a href={placeInfo.wikipediaUrl} target="_blank" rel="noreferrer"
+                      className="mt-2 inline-flex items-center gap-1 text-[10px] text-blue-400 hover:underline">
+                      Read more on Wikipedia <ExternalLink size={8} />
+                    </a>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Get Route CTA */}
+            <button onClick={() => { onSelectPlace?.(selectedPlace); setShowPanel(false); setShowSteps(true); }}
+              className="w-full flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-orange-500 to-amber-500 py-3.5 text-sm font-black text-white shadow-xl shadow-orange-500/25 hover:opacity-90 transition-all">
+              <Navigation size={16} /> Get Route
+            </button>
+          </div>
+        </div>
+      )}
 
     </div>
   );
