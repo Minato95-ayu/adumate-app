@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 
-// Validate "lon,lat" coordinate pair format
 function isValidCoordPair(val: string | null): boolean {
   if (!val) return false;
   const parts = val.split(",");
@@ -9,47 +8,58 @@ function isValidCoordPair(val: string | null): boolean {
   return !isNaN(lon) && !isNaN(lat) && lon >= -180 && lon <= 180 && lat >= -90 && lat <= 90;
 }
 
+const PROFILES: Record<string, string> = {
+  driving: "driving-car",
+  walking: "foot-walking",
+  cycling: "cycling-regular",
+};
+
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const start = searchParams.get("start");
   const end = searchParams.get("end");
+  const mode = searchParams.get("mode") || "driving";
 
-  // --- Input Validation ---
   if (!isValidCoordPair(start) || !isValidCoordPair(end)) {
     return NextResponse.json({ error: "Invalid or missing coordinates" }, { status: 400 });
   }
 
+  const profile = PROFILES[mode] || "driving-car";
   const apiKey = process.env.ORS_API_KEY;
   if (!apiKey) {
     return NextResponse.json({ error: "Routing service unavailable" }, { status: 503 });
   }
 
   try {
-    const url = new URL("https://api.openrouteservice.org/v2/directions/driving-car");
-    url.searchParams.set("api_key", apiKey);
-    url.searchParams.set("start", start!);
-    url.searchParams.set("end", end!);
+    // Use POST for full step-by-step instructions
+    const orsRes = await fetch(
+      `https://api.openrouteservice.org/v2/directions/${profile}/geojson`,
+      {
+        method: "POST",
+        headers: {
+          "Authorization": apiKey,
+          "Content-Type": "application/json",
+          "Accept": "application/json",
+        },
+        body: JSON.stringify({
+          coordinates: [
+            start!.split(",").map(Number),
+            end!.split(",").map(Number),
+          ],
+          instructions: true,
+          language: "en",
+          units: "km",
+        }),
+        next: { revalidate: 0 },
+      }
+    );
 
-    const response = await fetch(url.toString(), {
-      headers: {
-        Accept: "application/json, application/geo+json",
-      },
-      next: { revalidate: 0 },
-    });
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      // Don't expose internal ORS error details to client
-      return NextResponse.json(
-        { error: "Route not available for this destination." },
-        { status: 502 }
-      );
+    const data = await orsRes.json();
+    if (!orsRes.ok) {
+      return NextResponse.json({ error: "Route not available for this destination." }, { status: 502 });
     }
 
-    return NextResponse.json(data, {
-      headers: { "Cache-Control": "no-store" },
-    });
+    return NextResponse.json(data, { headers: { "Cache-Control": "no-store" } });
   } catch {
     return NextResponse.json({ error: "Unable to fetch route. Please try again." }, { status: 500 });
   }
