@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { gatherKnowledge, formatContextForAI } from "@/lib/vidwan-knowledge";
 
 const TODAY = new Date().toLocaleDateString("en-IN", {
   weekday: "long", year: "numeric", month: "long", day: "numeric",
@@ -103,6 +104,7 @@ export async function POST(req: Request) {
     const isPdf = fileType?.includes("pdf");
     const hasFile = !!fileData;
     const isSearchNeeded = /search|news|latest|today|current|2024|2025|2026|real.?time|live|update/i.test(userPrompt || "");
+    const isTechQuery = /code|github|software|programming|ai model|framework|library|api|javascript|python|react|node/i.test(userPrompt || "");
     const isImageGenRequest = /image bana|generate image|ek image|draw|create image|photo bana|picture bana|ek photo|design bana|poster bana|banner bana|logo bana/i.test(userPrompt || "");
 
     // 🎨 IMAGE GENERATION — Free via Pollinations.ai (no API key needed!)
@@ -115,6 +117,14 @@ export async function POST(req: Request) {
       const imageUrl = `https://image.pollinations.ai/prompt/${imagePrompt}?width=1024&height=768&nologo=true&seed=${Date.now()}`;
       const responseText = `Yeh raha! 🎨\n\n![Generated Image](${imageUrl})\n\n**Prompt used:** ${decodeURIComponent(imagePrompt)}\n\nAgar alag style ya scene chahiye ho toh describe karo — main dobara generate kar deta hoon!`;
       return NextResponse.json({ text: responseText, provider: "Pollinations AI (Image)" });
+    }
+
+    // 🧠 KNOWLEDGE GATHERING — Fetch real-time data before AI call
+    let knowledgeContext = "";
+    if (!hasFile && userPrompt && userPrompt.length > 5) {
+      const queryType = isTechQuery ? "tech" : isSearchNeeded ? "news" : "general";
+      const knowledge = await gatherKnowledge(userPrompt.slice(0, 200), queryType);
+      knowledgeContext = formatContextForAI(knowledge);
     }
 
     const chatHistory = history.map((m: { role: string; content: string }) => ({
@@ -168,12 +178,15 @@ export async function POST(req: Request) {
     // --- PROVIDER 2: Groq — Llama 3.3 70B (Primary) ---
     async function tryGroq() {
       if (!keys.groq) throw new Error("No Groq Key");
+      const enrichedPrompt = knowledgeContext
+        ? `${userPrompt}\n${knowledgeContext}`
+        : userPrompt;
       const resp = await fetch("https://api.groq.com/openai/v1/chat/completions", {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${keys.groq}` },
         body: JSON.stringify({
           model: "llama-3.3-70b-versatile",
-          messages: [{ role: "system", content: SYSTEM_PROMPT }, ...chatHistory, { role: "user", content: userPrompt }],
+          messages: [{ role: "system", content: SYSTEM_PROMPT }, ...chatHistory, { role: "user", content: enrichedPrompt }],
           max_tokens: 2048,
           temperature: 0.7,
         }),
@@ -187,12 +200,13 @@ export async function POST(req: Request) {
     // --- PROVIDER 5: DeepSeek V3 ---
     async function tryDeepSeek() {
       if (!keys.deepSeek) throw new Error("No DeepSeek Key");
+      const enrichedPrompt = knowledgeContext ? `${userPrompt}\n${knowledgeContext}` : userPrompt;
       const resp = await fetch("https://api.deepseek.com/chat/completions", {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${keys.deepSeek}` },
         body: JSON.stringify({
           model: "deepseek-chat",
-          messages: [{ role: "system", content: SYSTEM_PROMPT }, ...chatHistory, { role: "user", content: userPrompt }],
+          messages: [{ role: "system", content: SYSTEM_PROMPT }, ...chatHistory, { role: "user", content: enrichedPrompt }],
           max_tokens: 2048,
         }),
       });
