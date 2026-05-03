@@ -58,7 +58,6 @@ export default function HomeClient() {
   const router = useRouter();
   const [kfQuery, setKfQuery] = useState("");
   const [user, setUser] = useState<any>(null);
-  const [showPartnerModal, setShowPartnerModal] = useState(false);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (u) => {
@@ -125,23 +124,13 @@ export default function HomeClient() {
               </Link>
             )}
 
-            {user ? (
-              <button
-                onClick={() => setShowPartnerModal(true)}
-                className="btn-3d group relative w-full sm:w-auto flex items-center justify-center gap-3 bg-gradient-to-b from-slate-700 to-slate-900 border-2 border-slate-600 hover:border-primary/50 text-white px-8 py-4 md:px-10 md:py-5 rounded-2xl font-black text-lg md:text-xl shadow-[0_10px_0_#0f172a,0_15px_20px_rgba(0,0,0,0.5)]"
-              >
-                <span>Partner Area</span>
-                <Building size={20} className="text-primary group-hover:animate-bounce drop-shadow-lg" />
-              </button>
-            ) : (
-              <Link
-                href="/login?role=partner"
-                className="btn-3d group relative w-full sm:w-auto flex items-center justify-center gap-3 bg-gradient-to-b from-slate-700 to-slate-900 border-2 border-slate-600 hover:border-primary/50 text-white px-8 py-4 md:px-10 md:py-5 rounded-2xl font-black text-lg md:text-xl shadow-[0_10px_0_#0f172a,0_15px_20px_rgba(0,0,0,0.5)]"
-              >
-                <span>Partner With Us</span>
-                <Building size={20} className="text-primary group-hover:animate-bounce drop-shadow-lg" />
-              </Link>
-            )}
+            <Link
+              href="/partner/register"
+              className="btn-3d group relative w-full sm:w-auto flex items-center justify-center gap-3 bg-gradient-to-b from-slate-700 to-slate-900 border-2 border-slate-600 hover:border-primary/50 text-white px-8 py-4 md:px-10 md:py-5 rounded-2xl font-black text-lg md:text-xl shadow-[0_10px_0_#0f172a,0_15px_20px_rgba(0,0,0,0.5)]"
+            >
+              <span>Partner Area</span>
+              <Building size={20} className="text-primary group-hover:animate-bounce drop-shadow-lg" />
+            </Link>
 
             {/* Vidwan AI Quick Access */}
             <motion.div
@@ -473,86 +462,6 @@ export default function HomeClient() {
         </motion.div>
 
       </main>
-
-      {/* ── PARTNER MODAL ─────────────────────────────────────────────── */}
-      {showPartnerModal && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4" onClick={() => setShowPartnerModal(false)}>
-          <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
-          <div
-            className="relative w-full max-w-lg bg-[#060d1a] border border-white/10 rounded-3xl shadow-2xl overflow-hidden"
-            onClick={e => e.stopPropagation()}
-          >
-            {/* Header gradient bar */}
-            <div className="h-1.5 w-full bg-gradient-to-r from-orange-500 via-amber-400 to-orange-500" />
-
-            <div className="p-8">
-              {/* Close */}
-              <button onClick={() => setShowPartnerModal(false)} className="absolute top-5 right-5 w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/20 transition-all text-lg">✕</button>
-
-              {/* Icon + Title */}
-              <div className="flex items-center gap-4 mb-6">
-                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-orange-500 to-amber-400 flex items-center justify-center shadow-xl">
-                  <Building size={28} className="text-white" />
-                </div>
-                <div>
-                  <h2 className="text-xl font-black text-white">Adumate Partner Bano!</h2>
-                  <p className="text-xs text-slate-400 mt-0.5">Apna business students tak pahunchao</p>
-                </div>
-              </div>
-
-              {/* Who can be partner */}
-              <p className="text-xs font-black uppercase tracking-widest text-slate-500 mb-3">Kaun partner ban sakta hai?</p>
-              <div className="grid grid-cols-3 gap-2 mb-6">
-                {[
-                  { icon: "📚", label: "Library" },
-                  { icon: "🏠", label: "Hostel/PG" },
-                  { icon: "🍱", label: "Mess" },
-                  { icon: "🛏", label: "Room Rent" },
-                  { icon: "👨‍🏫", label: "Tutor" },
-                  { icon: "💼", label: "Job Provider" },
-                ].map(s => (
-                  <div key={s.label} className="flex flex-col items-center gap-1.5 p-3 rounded-2xl bg-white/5 border border-white/10">
-                    <span className="text-2xl">{s.icon}</span>
-                    <span className="text-[10px] font-bold text-slate-300">{s.label}</span>
-                  </div>
-                ))}
-              </div>
-
-              {/* Benefits */}
-              <p className="text-xs font-black uppercase tracking-widest text-slate-500 mb-3">Partner ko kya milta hai?</p>
-              <div className="space-y-2 mb-8">
-                {[
-                  { icon: "📢", text: "Free listing — thousands students tak pahuncho" },
-                  { icon: "📊", text: "Smart Dashboard — seats, bookings, earnings manage karo" },
-                  { icon: "💬", text: "Direct inquiries — customer khud aayega" },
-                  { icon: "⭐", text: "Verified badge — trust build hoga" },
-                ].map((b, i) => (
-                  <div key={i} className="flex items-center gap-3 p-3 rounded-xl bg-white/5 border border-white/10">
-                    <span className="text-lg shrink-0">{b.icon}</span>
-                    <span className="text-sm text-slate-300">{b.text}</span>
-                  </div>
-                ))}
-              </div>
-
-              {/* CTAs */}
-              <div className="flex flex-col gap-3">
-                <button
-                  onClick={() => { setShowPartnerModal(false); router.push("/partner/register"); }}
-                  className="w-full flex items-center justify-center gap-2 py-4 rounded-2xl bg-gradient-to-r from-orange-500 to-amber-400 text-white font-black text-sm shadow-xl shadow-orange-500/25 hover:opacity-90 transition-all"
-                >
-                  🚀 Register as Partner — It's Free!
-                </button>
-                <button
-                  onClick={() => { setShowPartnerModal(false); router.push("/partner/dashboard?type=library"); }}
-                  className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl border border-white/10 bg-white/5 text-slate-300 font-bold text-sm hover:bg-white/10 transition-all"
-                >
-                  Already registered? Go to Dashboard →
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
