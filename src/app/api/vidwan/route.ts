@@ -1,5 +1,12 @@
 import { NextResponse } from "next/server";
 import { gatherKnowledge, formatContextForAI } from "@/lib/vidwan-knowledge";
+import {
+  loadMemory,
+  saveMessages,
+  formatMemoryForAI,
+  extractAndSave,
+  shouldExtract,
+} from "@/lib/student-memory";
 
 const TODAY = new Date().toLocaleDateString("en-IN", {
   weekday: "long", year: "numeric", month: "long", day: "numeric",
@@ -126,9 +133,11 @@ export async function POST(req: Request) {
     if (!authHeader?.startsWith("Bearer ")) {
       return NextResponse.json({ error: "Login required to use Vidwan AI" }, { status: 401 });
     }
+    let userId = "";
     try {
       const { adminAuth } = await import("@/lib/firebase-admin");
-      await adminAuth.verifyIdToken(authHeader.split("Bearer ")[1]);
+      const decoded = await adminAuth.verifyIdToken(authHeader.split("Bearer ")[1]);
+      userId = decoded.uid;
     } catch {
       return NextResponse.json({ error: "Session expired. Please login again." }, { status: 401 });
     }
@@ -177,13 +186,32 @@ export async function POST(req: Request) {
       return NextResponse.json({ text: responseText, provider: "Pollinations AI (Image)" });
     }
 
-    // 🧠 KNOWLEDGE GATHERING — Fetch real-time data before AI call
+    // 🧠 KNOWLEDGE GATHERING + MEMORY — Run in parallel for speed
     let knowledgeContext = "";
+    let memoryContext = "";
+
+    const parallelTasks: Promise<unknown>[] = [];
+
+    // Knowledge gathering
     if (!hasFile && userPrompt && userPrompt.length > 5) {
       const queryType = isTechQuery ? "tech" : isSearchNeeded ? "news" : "general";
-      const knowledge = await gatherKnowledge(userPrompt.slice(0, 200), queryType);
-      knowledgeContext = formatContextForAI(knowledge);
+      parallelTasks.push(
+        gatherKnowledge(userPrompt.slice(0, 200), queryType).then((k) => {
+          knowledgeContext = formatContextForAI(k);
+        })
+      );
     }
+
+    // Load student memory from Firestore (FREE — no Zep needed!)
+    if (userId) {
+      parallelTasks.push(
+        loadMemory(userId).then((mem) => {
+          memoryContext = formatMemoryForAI(mem);
+        })
+      );
+    }
+
+    await Promise.allSettled(parallelTasks);
 
     const chatHistory = history.map((m: { role: string; content: string }) => ({
       role: m.role,
@@ -213,7 +241,7 @@ export async function POST(req: Request) {
         });
       }
       const body = {
-        system_instruction: { parts: [{ text: SYSTEM_PROMPT }] },
+        system_instruction: { parts: [{ text: SYSTEM_PROMPT + memoryContext }] },
         contents: [...geminiHistory, { role: "user", parts: currentParts }],
         ...(isSearchNeeded ? { tools: [{ google_search_retrieval: {} }] } : {}),
         generationConfig: { maxOutputTokens: 2048, temperature: 0.7 },
@@ -244,7 +272,7 @@ export async function POST(req: Request) {
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${keys.groq}` },
         body: JSON.stringify({
           model: "llama-3.3-70b-versatile",
-          messages: [{ role: "system", content: SYSTEM_PROMPT }, ...chatHistory, { role: "user", content: enrichedPrompt }],
+          messages: [{ role: "system", content: SYSTEM_PROMPT + memoryContext }, ...chatHistory, { role: "user", content: enrichedPrompt }],
           max_tokens: 2048,
           temperature: 0.7,
         }),
@@ -418,6 +446,20 @@ export async function POST(req: Request) {
     for (const providerFn of providerChain) {
       try {
         const result = await providerFn();
+
+        // 💾 SAVE TO MEMORY (async — never blocks the response)
+        if (userId && userPrompt && result.text) {
+          // Save message pair
+          saveMessages(userId, userPrompt, result.text).catch(() => {});
+
+          // Entity extraction every N messages (uses fast Groq 8B — free)
+          loadMemory(userId).then((mem) => {
+            if (shouldExtract(mem.messageCount + 1) && keys.groq) {
+              extractAndSave(userId, userPrompt, keys.groq).catch(() => {});
+            }
+          }).catch(() => {});
+        }
+
         return NextResponse.json(result);
       } catch (e: unknown) {
         const msg = e instanceof Error ? e.message : "Unknown error";
