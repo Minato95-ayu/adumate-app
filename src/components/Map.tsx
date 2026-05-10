@@ -40,7 +40,25 @@ type Place = Provider & {
   phone?: string; website?: string; about?: string;
   services?: string[];
   social?: Provider["social"] & { linkedin?: string; facebook?: string; justdial?: string };
+  distanceKm?: number | null;  // ✅ Added: from API
 };
+
+// Haversine for client-side fallback distance
+function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const R = 6371;
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLng = ((lng2 - lng1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos((lat1 * Math.PI) / 180) *
+    Math.cos((lat2 * Math.PI) / 180) *
+    Math.sin(dLng / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+function formatDist(km: number): string {
+  return km < 1 ? `${(km * 1000).toFixed(0)} m` : `${km.toFixed(1)} km`;
+}
 
 interface NavStep { instruction: string; distance: number; duration: number; type: number; }
 interface RouteSummary { distanceKm: number; durationMin: number; steps: NavStep[]; }
@@ -294,26 +312,37 @@ export default function Map({ providers, center = { lat: 28.6139, lng: 77.209 },
         <CircleMarker center={[displayPos.lat, displayPos.lng]} radius={52} pathOptions={{ color: "#3b82f6", fillColor: "#3b82f6", fillOpacity: 0.07 }} />
 
         {/* Place markers */}
-        {providers.map((p, i) => (
+        {providers.map((p, i) => {
+          // Distance: from API or calculate client-side fallback
+          const distKm = (p.distanceKm != null)
+            ? p.distanceKm
+            : haversineKm(displayPos.lat, displayPos.lng, p.lat, p.lng);
+
+          return (
           <Marker key={p.id} position={[p.lat, p.lng]}
             icon={placeIcon(String.fromCharCode(65 + (i % 26)))}
             eventHandlers={{ click: () => { onSelectPlace?.(p); fetchPlaceInfo(p); } }}>
             <Popup>
-              <div className="min-w-[200px]">
+              <div className="min-w-[220px]">
                 <p className="text-sm font-bold text-slate-900">{p.name}</p>
                 <p className="mt-1 text-xs text-slate-500">{p.address || "Student service"}</p>
-                <p className="mt-1 text-[11px] font-bold text-amber-600">⭐ {Number(p.rating || 0).toFixed(1)}</p>
+                <div className="mt-1.5 flex items-center gap-2">
+                  <span className="text-[11px] font-bold text-amber-600">⭐ {Number(p.rating || 0).toFixed(1)}</span>
+                  <span className="text-[10px] text-slate-400">•</span>
+                  <span className="text-[11px] font-bold text-blue-600">📍 {formatDist(distKm)}</span>
+                </div>
                 <div className="mt-2 flex gap-2">
                   {p.phone && <a href={`tel:${p.phone}`} className="inline-flex items-center gap-1 rounded-lg bg-slate-900 px-2 py-1.5 text-xs font-bold text-white"><Phone size={10} />Call</a>}
                   {p.website && <a href={ensureUrl(p.website)} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 rounded-lg border px-2 py-1.5 text-xs font-bold"><Globe size={10} />Web</a>}
                 </div>
                 <button onClick={() => { onSelectPlace?.(p); fetchPlaceInfo(p); }} className="mt-2 w-full rounded-lg bg-orange-500 px-2 py-1.5 text-xs font-bold text-white">
-                  🧭 Get Route
+                  🧭 Get Route ({formatDist(distKm)})
                 </button>
               </div>
             </Popup>
           </Marker>
-        ))}
+          );
+        })}
 
         {/* Route line */}
         {routePoints.length > 1 && (
@@ -334,7 +363,16 @@ export default function Map({ providers, center = { lat: 28.6139, lng: 77.209 },
               {!routeLoading && routeError && <p className="text-sm text-rose-400">{routeError}</p>}
               {!routeLoading && routeSummary && (
                 <p className="text-sm font-bold text-white">
-                  {routeSummary.distanceKm.toFixed(1)} km &nbsp;•&nbsp; {routeSummary.durationMin.toFixed(0)} min
+                  {/* ORS returns distance in km when units="km" is set */}
+                  {routeSummary.distanceKm < 1
+                    ? `${(routeSummary.distanceKm * 1000).toFixed(0)} m`
+                    : `${routeSummary.distanceKm.toFixed(2)} km`
+                  }
+                  &nbsp;•&nbsp;
+                  {routeSummary.durationMin < 60
+                    ? `${routeSummary.durationMin.toFixed(0)} min`
+                    : `${Math.floor(routeSummary.durationMin / 60)}h ${(routeSummary.durationMin % 60).toFixed(0)}m`
+                  }
                   <span className="ml-2 text-slate-400 text-xs font-normal">({travelMode})</span>
                 </p>
               )}

@@ -72,6 +72,17 @@ type OsmElement = {
   tags?: Record<string, string | undefined>;
 };
 
+// Haversine distance in km between two lat/lng points
+function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const R = 6371;
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLng = ((lng2 - lng1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLng / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
 async function fetchFromGoogle(lat: string, lon: string, category: string, radius: string) {
   if (!GOOGLE_KEY) return null;
 
@@ -97,12 +108,16 @@ async function fetchFromGoogle(lat: string, lon: string, category: string, radiu
     name: p.name || "",
     address: p.vicinity || p.formatted_address || "",
     lat: p.geometry?.location?.lat,
-    lon: p.geometry?.location?.lng,
+    lng: p.geometry?.location?.lng,   // ✅ fixed: was `lon`, Map.tsx needs `lng`
+    lon: p.geometry?.location?.lng,   // keep both for backwards compat
     rating: p.rating ?? null,
     userRatingsTotal: p.user_ratings_total ?? null,
     phone: "",
     website: "",
-  })).filter((p) => p.name && p.lat && p.lon);
+    distanceKm: (p.geometry?.location?.lat && p.geometry?.location?.lng)
+      ? haversineKm(Number(lat), Number(lon), p.geometry.location.lat, p.geometry.location.lng)
+      : null,
+  })).filter((p) => p.name && p.lat && p.lng);
 
   return { source: "google", places };
 }
@@ -138,19 +153,30 @@ async function fetchFromOsm(lat: string, lon: string, category: string, radius: 
       phone: el.tags?.phone || el.tags?.["contact:phone"] || "",
       website: el.tags?.website || el.tags?.["contact:website"] || "",
       lat: el.lat ?? el.center?.lat,
-      lon: el.lon ?? el.center?.lon,
+      lng: el.lon ?? el.center?.lon,  // ✅ fixed: Map.tsx uses `lng`, was `lon`
+      lon: el.lon ?? el.center?.lon,  // keep both for backwards compat
       rating: null,
       userRatingsTotal: null,
     }))
-    .filter((p) => p.name && p.lat && p.lon);
+    .filter((p) => p.name && p.lat && p.lng);
 
   // Deduplicate by rounded coordinates + lowercase name
   const dedupedMap = new Map<string, typeof rawPlaces[number]>();
   for (const place of rawPlaces) {
-    const key = `${place.name.toLowerCase()}|${Number(place.lat).toFixed(5)}|${Number(place.lon).toFixed(5)}`;
+    const key = `${place.name.toLowerCase()}|${Number(place.lat).toFixed(5)}|${Number(place.lng).toFixed(5)}`;
     if (!dedupedMap.has(key)) dedupedMap.set(key, place);
   }
-  const places = Array.from(dedupedMap.values()).slice(0, 80);
+
+  // Add distance + sort by nearest first
+  const userLat = Number(lat);
+  const userLng = Number(lon);
+  const places = Array.from(dedupedMap.values())
+    .map((p) => ({
+      ...p,
+      distanceKm: haversineKm(userLat, userLng, Number(p.lat), Number(p.lng)),
+    }))
+    .sort((a, b) => a.distanceKm - b.distanceKm)
+    .slice(0, 80);
 
   return { source: "osm", places };
 }

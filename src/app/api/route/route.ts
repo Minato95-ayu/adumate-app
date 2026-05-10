@@ -39,7 +39,7 @@ export async function GET(req: Request) {
         headers: {
           "Authorization": apiKey,
           "Content-Type": "application/json",
-          "Accept": "application/json",
+          "Accept": "application/json, application/geo+json",
         },
         body: JSON.stringify({
           coordinates: [
@@ -48,15 +48,29 @@ export async function GET(req: Request) {
           ],
           instructions: true,
           language: "en",
-          units: "km",
+          units: "km",         // ✅ Ensures distance in km throughout
+          geometry_simplify: false,
         }),
         next: { revalidate: 0 },
       }
     );
 
-    const data = await orsRes.json();
     if (!orsRes.ok) {
-      return NextResponse.json({ error: "Route not available for this destination." }, { status: 502 });
+      // Try to extract ORS error message for better debugging
+      let errMsg = "Route not available for this destination.";
+      try {
+        const errBody = await orsRes.json();
+        if (errBody?.error?.message) errMsg = errBody.error.message;
+        else if (errBody?.message) errMsg = errBody.message;
+      } catch { /* ignore parse errors */ }
+      return NextResponse.json({ error: errMsg }, { status: 502 });
+    }
+
+    const data = await orsRes.json();
+
+    // Validate response has route data
+    if (!data?.features?.[0]?.geometry?.coordinates?.length) {
+      return NextResponse.json({ error: "No route found between these locations." }, { status: 404 });
     }
 
     return NextResponse.json(data, { headers: { "Cache-Control": "no-store" } });
