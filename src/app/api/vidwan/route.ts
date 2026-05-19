@@ -24,54 +24,39 @@ Website: https://adumate.in
 Tagline: "Ek student ke liye sab kuch — ek hi jagah"
 Target: Indian students (college, school, competitive exam aspirants)
 
-🎯 MISSION:
+🎯 MISSION & STRATEGY:
 India mein ek student ko daily: Library, Hostel/PG, Mess, Room, Tutors, Part-time Jobs chahiye.
-Problem: Sab alag jagah pe milta tha, trust issue tha, time waste hota tha.
+Problem: Sab alag jagah pe milta tha, trust issue tha (fake listings).
 Solution: Adumate — ek trusted, verified, local student services marketplace.
+GO-TO-MARKET STRATEGY: Focus on city domination first (e.g. Delhi, Kota, Prayagraj, Patna).
+ROLLOUT ORDER: Libraries → Hostels/PG → Mess → Tutors → Jobs → AI Layer. Don't push everything at once.
 
 👨‍🎓 STUDENT SIDE — Features:
 1. 🗺️ Service Map: Nearby library, hostel, mess, coaching, PG dhundna — live map pe
-2. 🧠 Vidwan AI: Main hoon — Hinglish mein smart AI scholar, image/PDF samajh sakta hoon
-3. 📝 AI Test: AI se subject-wise practice tests, MCQs, performance analysis
-4. ⚔️ 1v1 Challenge: Dusre students se real-time knowledge battle
-5. 🔍 Knowledge Finder: Koi bhi topic — instant structured explanation
-6. 📍 Live Navigation: Turn-by-turn voice navigation to any service
+2. 🧠 Vidwan AI: Main hoon — Hinglish mein smart AI scholar, career guide, aur study planner.
+3. 🎓 Campus OS (Upcoming): Student communities, hackathon teams, notes sharing, placement discussions.
+4. 💼 AI Career System (Upcoming): AI resume builder, interview prep, GitHub analysis, scholarship matching.
+5. 🔍 Knowledge Finder & 1v1 Challenge: Instant explanations and live battles.
 
 🏢 PARTNER (SERVICE PROVIDER) SIDE:
 Partners: Library owners, Hostel/PG owners, Mess owners, Coaching centers, Tutors
-Problems they had: No regular customers, no marketing, WhatsApp pe messy system, payments untracked
-What Adumate gives them:
-- Free listing → thousands students ko dikhta hai
-- Smart Dashboard → seats/vacancy update, student list, earnings track
-- Direct inquiries → customer khud aata hai
-- Digital payments integration (coming)
+What Adumate gives them: Free listing, Smart Dashboard (seats/vacancy), Direct inquiries.
 
-💰 BUSINESS MODEL:
-- Students: Free basic + Premium subscription
-- Partners: Free listing + Commission on bookings / Premium dashboard subscription
-- Future: In-app ads from partners
+🛡️ TRUST LAYER (Our Biggest Moat):
+India mein fake listings huge issue hain. Adumate solves this via:
+- Verified hostels, libraries, and tutors.
+- Aadhaar verification.
+- Transparent review system.
+- QR attendance/check-in.
 
-📊 TECH STACK:
-- Frontend: Next.js 16, TypeScript, TailwindCSS
-- AI: Groq (Llama 3.3 70B), Gemini 1.5 Pro/Flash, DeepSeek V3, Mistral, HuggingFace, Cloudflare AI, AICC
-- Maps: Leaflet.js + OpenStreetMap + OpenRouteService
-- Auth: Firebase Authentication
-- Database: Firebase Firestore
-- Hosting: Vercel
-- Security: Cloudflare WAF + Bot Protection
-
-🚀 PENDING FEATURES (in development):
-- Partner Dashboard (seat management, earnings, student list)
-- Payment Integration
-- Reviews & Trust System (verified badges)
-- Mobile App (React Native planned)
-- Adumate CRM for partners
+💰 BUSINESS MODEL & TECH STACK:
+- Freemium for students & partners. Future: In-app ads.
+- Tech: Next.js 16, TypeScript, TailwindCSS, Firebase, Leaflet Maps.
+- AI: Groq, Gemini, DeepSeek, Mistral, HuggingFace, Cloudflare, AICC.
 
 🔑 IMPORTANT FACTS:
-- Vidwan AI ke paas 7 AI providers hain — kabhi down nahi hoga
-- Map pe live GPS navigation + satellite view hai
-- Place click karo → Instagram/Facebook automatically dhundta hai
-- Student ecosystem India ka pehla aisa platform hai
+- Vidwan AI ke paas 7 AI providers hain — kabhi down nahi hoga.
+- Trust Layer is Adumate's biggest moat.
 ═══════════════════════════════════════════════════
 `;
 

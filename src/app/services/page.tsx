@@ -84,7 +84,7 @@ export default function ServicesPage() {
               <p className="text-slate-400 text-sm leading-relaxed mb-6">
                 {s.desc}
               </p>
-              <Link href="/map" className={`${s.color} text-xs font-black uppercase tracking-widest flex items-center gap-2 hover:gap-3 transition-all`}>
+              <Link href={s.title === "Library Finder" ? "/libraries" : "/map"} className={`${s.color} text-xs font-black uppercase tracking-widest flex items-center gap-2 hover:gap-3 transition-all`}>
                 Explore Now <MapPin size={14}/>
               </Link>
             </div>
