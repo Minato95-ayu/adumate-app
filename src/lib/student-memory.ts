@@ -20,6 +20,10 @@ export interface StudentProfile {
   year?: string;           // "1st year", "2nd year"
   hostelArea?: string;     // Preferred locality
   dietPref?: string;       // "veg", "non-veg"
+  weakSubjects?: string[]; // ["Physics", "Organic Chemistry"]
+  strongSubjects?: string[]; // ["Biology", "Maths"]
+  targetScore?: string;    // "650+", "99 percentile"
+  dailyStudyHours?: number; // 6
   lastUpdated?: number;
 }
 
@@ -165,6 +169,10 @@ export function formatMemoryForAI(memory: StudentMemory): string {
   if (p.stream) profileParts.push(`Stream: ${p.stream}`);
   if (p.year) profileParts.push(`Year: ${p.year}`);
   if (p.dietPref) profileParts.push(`Diet: ${p.dietPref}`);
+  if (p.weakSubjects?.length) profileParts.push(`Weak Subjects: ${p.weakSubjects.join(", ")}`);
+  if (p.strongSubjects?.length) profileParts.push(`Strong Subjects: ${p.strongSubjects.join(", ")}`);
+  if (p.targetScore) profileParts.push(`Target Score: ${p.targetScore}`);
+  if (p.dailyStudyHours) profileParts.push(`Daily Study Hours: ${p.dailyStudyHours}`);
 
   if (profileParts.length > 0) {
     parts.push(`👤 STUDENT PROFILE:\n${profileParts.map((x) => `• ${x}`).join("\n")}`);
@@ -204,14 +212,19 @@ JSON format:
     "stream": "string or null",
     "year": "string or null",
     "hostelArea": "string or null",
-    "dietPref": "veg or non-veg or null"
+    "dietPref": "veg or non-veg or null",
+    "weakSubjects": ["string"],
+    "strongSubjects": ["string"],
+    "targetScore": "string or null",
+    "dailyStudyHours": "number or null"
   }
 }
 
 Rules:
 - facts: Short factual statements about the student (max 5, each under 15 words)
 - Only include profile fields that are EXPLICITLY mentioned
-- budget must be a number (no ₹ symbol)
+- budget and dailyStudyHours must be numbers
+- weakSubjects/strongSubjects must be arrays of strings
 - If nothing relevant found, return: {"facts":[],"profile":{}}`;
 
 /**
