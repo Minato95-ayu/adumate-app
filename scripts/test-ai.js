@@ -2,7 +2,7 @@ const { GoogleGenerativeAI } = require("@google/generative-ai");
 const fs = require("fs");
 const path = require("path");
 
-const envPath = path.join(__dirname, ".env.local");
+const envPath = path.join(__dirname, "..", ".env.local");
 const envContent = fs.readFileSync(envPath, "utf8");
 const geminiKey = envContent.match(/NEXT_PUBLIC_GEMINI_API_KEY="(.+)"/)[1];
 
