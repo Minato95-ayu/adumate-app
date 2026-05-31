@@ -6,7 +6,6 @@ import {
   useMap, Polyline, CircleMarker,
 } from "react-leaflet";
 import L from "leaflet";
-import "leaflet/dist/leaflet.css";
 import {
   MapPin, Phone, Globe, Navigation, Layers, Car, PersonStanding,
   Bike, Volume2, VolumeX, ChevronRight, X, Locate, Clock, Info,
@@ -840,7 +839,7 @@ export default function Map({ providers, center = { lat: 28.6139, lng: 77.209 },
   return (
     <div className="relative h-full w-full overflow-hidden" style={{ borderRadius: "2rem", border: "1px solid rgba(255,255,255,0.08)", background: "#08101c", boxShadow: "0 32px 80px rgba(0,0,0,0.6)" }}>
 
-      <MapContainer center={[center.lat, center.lng]} zoom={13} scrollWheelZoom className="h-full w-full" zoomControl={false}>
+      <MapContainer center={[center.lat, center.lng]} zoom={13} scrollWheelZoom className="h-full w-full" style={{ height: "100%", width: "100%", zIndex: 0 }} zoomControl={false}>
         <DynamicTileLayer layer={mapLayer} />
         <MapController center={center}
           selectedPlace={selectedRoutePlace || (selectedPlace as unknown as Place | RoutePlace | null)}
