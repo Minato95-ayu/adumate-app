@@ -32,7 +32,7 @@ export const metadata: Metadata = {
     "verified hostels for students",
     "student community India",
   ],
-  authors: [{ name: "Ayush Kaushik", url: "https://www.instagram.com/o_aa.yu_s/" }],
+  authors: [{ name: "Ayush Kaushik", url: "https://www.instagram.com/aa.yu_s/" }],
   creator: "Ayush Kaushik",
   publisher: "Adumate",
   robots: {
@@ -126,13 +126,13 @@ const jsonLd = {
       },
       image: { "@type": "ImageObject", "url": `${BASE_URL}/og-image.png` },
       sameAs: [
-        "https://www.instagram.com/o_aa.yu_s/",
+        "https://www.instagram.com/aa.yu_s/",
         "https://twitter.com/adumate_app"
       ],
       founder: {
         "@type": "Person",
         name: "Ayush Kaushik",
-        sameAs: ["https://www.instagram.com/o_aa.yu_s/"],
+        sameAs: ["https://www.instagram.com/aa.yu_s/"],
       },
       description:
         "Adumate simplifies student life by connecting students with hostels, libraries, mess, tutors, and AI-powered study tools.",
