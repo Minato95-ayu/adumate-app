@@ -444,7 +444,7 @@ export default function HomeClient() {
                     <h3 className="text-3xl font-black text-white drop-shadow-md">Ayush Kaushik</h3>
                     <p className="text-primary font-bold text-lg">Founder & CEO</p>
                     <a
-                      href="https://www.instagram.com/o_aa.yu_s/"
+                      href="https://www.instagram.com/aa.yu_s/"
                       target="_blank"
                       rel="noopener noreferrer"
                       className="inline-flex items-center gap-2 mt-2 px-3 py-1.5 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-purple-500 via-pink-500 to-orange-400 hover:scale-105 transition-transform shadow-lg"
