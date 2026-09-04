@@ -205,8 +205,8 @@ export async function POST(req: Request) {
       content: m.content,
     }));
 
-    // --- PROVIDER 1: Gemini 1.5 Pro/Flash (with Google Search) ---
-    async function tryGemini(modelName = "gemini-1.5-pro") {
+    // --- PROVIDER 1: Gemini 2.5 Flash-Lite / 2.0 Flash (with Google Search) ---
+    async function tryGemini(modelName = "gemini-2.5-flash-lite") {
       if (!keys.gemini) throw new Error("No Gemini Key");
       const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${keys.gemini}`;
       const geminiHistory = [];
@@ -240,15 +240,15 @@ export async function POST(req: Request) {
       });
       const data = await resp.json();
       if (data.error) {
-        if (modelName === "gemini-1.5-pro") return tryGemini("gemini-1.5-flash");
+        if (modelName === "gemini-2.5-flash-lite") return tryGemini("gemini-2.0-flash");
         throw new Error(`Gemini: ${data.error.message}`);
       }
       const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
       if (!text) throw new Error("Gemini: No text");
-      return { text, provider: `Gemini 1.5 ${modelName.includes("pro") ? "Pro" : "Flash"}` };
+      return { text, provider: `Gemini ${modelName}` };
     }
 
-    // --- PROVIDER 2: Groq — Llama 3.3 70B (Primary) ---
+    // --- PROVIDER 2: Groq — Llama 4 Scout (Primary) ---
     async function tryGroq() {
       if (!keys.groq) throw new Error("No Groq Key");
       const enrichedPrompt = knowledgeContext
@@ -258,7 +258,7 @@ export async function POST(req: Request) {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${keys.groq}` },
         body: JSON.stringify({
-          model: "llama-3.3-70b-versatile",
+          model: "meta-llama/llama-4-scout-17b-16e-instruct",
           messages: [{ role: "system", content: SYSTEM_PROMPT + memoryContext }, ...chatHistory, { role: "user", content: enrichedPrompt }],
           max_tokens: 2048,
           temperature: 0.7,
@@ -266,8 +266,8 @@ export async function POST(req: Request) {
       });
       const data = await resp.json();
       const text = data.choices?.[0]?.message?.content;
-      if (!text) throw new Error("Groq: Empty response");
-      return { text, provider: "Llama 3.3 70B (Groq)" };
+      if (!text) throw new Error(`Groq: ${data.error?.message || "Empty response"}`);
+      return { text, provider: "Llama 4 Scout (Groq)" };
     }
 
     // --- PROVIDER 5: DeepSeek V3 ---

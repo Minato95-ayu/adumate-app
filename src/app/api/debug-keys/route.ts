@@ -25,7 +25,7 @@ export async function GET() {
     const geminiKey = process.env.GEMINI_API_KEY;
     if (geminiKey) {
       const resp = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiKey}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${geminiKey}`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -54,7 +54,7 @@ export async function GET() {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${groqKey}` },
         body: JSON.stringify({
-          model: "llama-3.3-70b-versatile",
+          model: "meta-llama/llama-4-scout-17b-16e-instruct",
           messages: [{ role: "user", content: "Say hello in 5 words" }],
           max_tokens: 50,
         }),
