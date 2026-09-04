@@ -6,8 +6,10 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 import { User, GraduationCap, Building, Clock, CreditCard, Save, CheckCircle } from "lucide-react";
 import UserAvatar from "@/components/UserAvatar";
 import { motion } from "framer-motion";
+import { useRouter } from "next/navigation";
 
 export default function ProfilePage() {
+  const router = useRouter();
   const [userData, setUserData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
