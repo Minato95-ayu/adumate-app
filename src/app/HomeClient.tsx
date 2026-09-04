@@ -60,6 +60,10 @@ export default function HomeClient() {
   const [user, setUser] = useState<any>(null);
 
   useEffect(() => {
+    if (!auth) {
+      setUser(null);
+      return;
+    }
     const unsubscribe = onAuthStateChanged(auth, (u) => {
       setUser(u);
     });
@@ -151,6 +155,118 @@ export default function HomeClient() {
                 </div>
               </Link>
             </motion.div>
+          </div>
+        </motion.div>
+
+        {/* ====== CORE SERVICES SECTION ====== */}
+        <motion.div
+          initial={{ opacity: 0, y: 60 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-80px" }}
+          transition={{ duration: 0.8, type: "spring" }}
+          className="mt-20 w-full relative z-10"
+        >
+          {/* Section Header */}
+          <div className="text-center mb-10">
+            <motion.div
+              initial={{ scale: 0.8, opacity: 0 }}
+              whileInView={{ scale: 1, opacity: 1 }}
+              viewport={{ once: true }}
+              className="inline-flex items-center gap-3 px-5 py-2 rounded-full bg-primary/10 border border-primary/30 text-primary mb-5 text-sm font-bold"
+            >
+              <Building size={16} /> Essential Services
+            </motion.div>
+            <h2 className="text-4xl md:text-6xl font-black text-white mb-4">
+              Explore <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-orange-400">Adumate</span>
+            </h2>
+            <p className="text-slate-400 text-sm md:text-lg max-w-xl mx-auto px-4">
+              Find the best places to study, live, and eat around you
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 perspective-1000">
+            {[
+              {
+                icon: "📚",
+                title: "Libraries",
+                desc: "Find the best quiet spots with AC and WiFi nearby for focused study.",
+                gradient: "from-orange-600/25 to-red-600/25",
+                border: "border-orange-500/40",
+                glow: "shadow-orange-500/20",
+                badge: "Study Zone",
+                badgeColor: "text-orange-400 bg-orange-500/10 border-orange-500/20",
+                action: () => router.push("/map?category=library"),
+                cta: "Find nearby →",
+                ctaColor: "bg-orange-500 hover:bg-orange-400",
+              },
+              {
+                icon: "🏠",
+                title: "Hostels & PGs",
+                desc: "Discover comfortable and affordable living spaces tailored for students.",
+                gradient: "from-blue-600/25 to-indigo-600/25",
+                border: "border-blue-500/40",
+                glow: "shadow-blue-500/20",
+                badge: "Living",
+                badgeColor: "text-blue-400 bg-blue-500/10 border-blue-500/20",
+                action: () => router.push("/map?category=hostel"),
+                cta: "Find nearby →",
+                ctaColor: "bg-blue-500 hover:bg-blue-400",
+              },
+              {
+                icon: "🍱",
+                title: "Mess & Tiffin",
+                desc: "Get hygienic, home-like food options and monthly meal subscriptions.",
+                gradient: "from-green-600/25 to-emerald-600/25",
+                border: "border-green-500/40",
+                glow: "shadow-green-500/20",
+                badge: "Food",
+                badgeColor: "text-green-400 bg-green-500/10 border-green-500/20",
+                action: () => router.push("/map?category=mess"),
+                cta: "Find nearby →",
+                ctaColor: "bg-green-500 hover:bg-green-400",
+              },
+              {
+                icon: "👨‍🏫",
+                title: "Tutors",
+                desc: "Connect with verified local tutors for personalized academic guidance.",
+                gradient: "from-purple-600/25 to-fuchsia-600/25",
+                border: "border-purple-500/40",
+                glow: "shadow-purple-500/20",
+                badge: "Learning",
+                badgeColor: "text-purple-400 bg-purple-500/10 border-purple-500/20",
+                action: () => router.push("/map?category=tutor"),
+                cta: "Find nearby →",
+                ctaColor: "bg-purple-500 hover:bg-purple-400",
+              },
+            ].map((card, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 50, rotateX: 30 }}
+                whileInView={{ opacity: 1, y: 0, rotateX: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.15, duration: 0.7, type: "spring" }}
+                whileHover={{ y: -12, rotateY: 6, rotateX: -4, scale: 1.02 }}
+                onClick={card.action}
+                className={`relative bg-gradient-to-br ${card.gradient} border ${card.border} rounded-[2rem] p-6 md:p-8 cursor-pointer group overflow-hidden shadow-2xl ${card.glow} transform-style-preserve-3d transition-all`}
+              >
+                <div className={`absolute inset-0 bg-gradient-to-br ${card.gradient} opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-xl`} />
+                <motion.div
+                  animate={{ y: [0, -8, 0] }}
+                  transition={{ duration: 3, repeat: Infinity, ease: "easeInOut", delay: i * 0.5 }}
+                  className="text-5xl mb-5 relative z-10"
+                >
+                  {card.icon}
+                </motion.div>
+                <span className={`inline-flex items-center px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border mb-4 ${card.badgeColor}`}>
+                  {card.badge}
+                </span>
+                <h3 className="text-2xl font-black text-white mb-3 relative z-10">{card.title}</h3>
+                <p className="text-slate-300 text-sm leading-relaxed mb-6 relative z-10">{card.desc}</p>
+                <button className={`${card.ctaColor} text-white font-black px-5 py-3 rounded-2xl text-sm transition-all shadow-lg relative z-10 group-hover:scale-105`}>
+                  {card.cta}
+                </button>
+              </motion.div>
+            ))}
           </div>
         </motion.div>
 
@@ -365,30 +481,7 @@ export default function HomeClient() {
         </motion.div>
         {/* ====== END VIDWAN AI HERO ====== */}
 
-        <div className="mt-32 grid grid-cols-2 md:grid-cols-4 gap-6 w-full relative z-10 perspective-1000">
-          {[
-            { title: "Libraries", icon: <BookOpen size={32}/>, color: "text-primary", bg: "bg-primary/20", border: "border-primary/50", cat: "library" },
-            { title: "Hostels",   icon: <Home size={32}/>,     color: "text-blue-400",   bg: "bg-blue-400/20",   border: "border-blue-400/50",   cat: "hostel" },
-            { title: "Mess",      icon: <Utensils size={32}/>, color: "text-green-400",  bg: "bg-green-400/20",  border: "border-green-400/50",  cat: "mess" },
-            { title: "Tutors",    icon: <GraduationCap size={32}/>, color: "text-purple-400", bg: "bg-purple-400/20", border: "border-purple-400/50", cat: "tutor" },
-          ].map((item, i) => (
-            <motion.div
-              key={i}
-              onClick={() => router.push(`/map?category=${item.cat}`)}
-              initial={{ opacity: 0, y: 50, rotateX: 45 }}
-              animate={{ opacity: 1, y: 0, rotateX: 0 }}
-              transition={{ delay: i * 0.2 + 0.5, duration: 0.6 }}
-              whileHover={{ scale: 1.05, rotateY: 10, rotateX: -10, translateZ: 20 }}
-              className={`transform-style-preserve-3d cursor-pointer bg-slate-900/60 backdrop-blur-xl border-t border-l border-white/10 border-b-4 border-r-4 ${item.border} p-8 rounded-3xl flex flex-col items-center text-center shadow-2xl transition-all`}
-            >
-              <div className={`w-20 h-20 ${item.bg} ${item.color} rounded-2xl flex items-center justify-center mb-6 shadow-inner transform translate-z-10`}>
-                {item.icon}
-              </div>
-              <h3 className="font-extrabold text-xl text-white transform translate-z-5 tracking-wide">{item.title}</h3>
-              <p className="text-xs text-muted-foreground mt-2">Find nearby →</p>
-            </motion.div>
-          ))}
-        </div>
+
 
         {/* About Adumate & Founder Section */}
         <motion.div 

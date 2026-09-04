@@ -62,6 +62,7 @@ type GoogleNearbyResult = {
   };
   rating?: number;
   user_ratings_total?: number;
+  photos?: Array<{ photo_reference: string }>;
 };
 
 type OsmElement = {
@@ -110,6 +111,7 @@ async function fetchFromGoogle(lat: string, lon: string, category: string, radiu
     lat: p.geometry?.location?.lat,
     lng: p.geometry?.location?.lng,   // ✅ fixed: was `lon`, Map.tsx needs `lng`
     lon: p.geometry?.location?.lng,   // keep both for backwards compat
+    photo_reference: p.photos?.[0]?.photo_reference || null,
     rating: p.rating ?? null,
     userRatingsTotal: p.user_ratings_total ?? null,
     phone: "",

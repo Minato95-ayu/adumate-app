@@ -16,6 +16,13 @@ export default function ProtectedRoute({
   const router = useRouter();
 
   useEffect(() => {
+    if (!auth) {
+      setLoading(false);
+      if (requireAuth) {
+        router.push("/login");
+      }
+      return;
+    }
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (!user) {
         router.push("/login");
@@ -35,12 +42,18 @@ export default function ProtectedRoute({
             setLoading(false);
           }
         } else {
+          // Document doesn't exist, maybe they haven't finished login setup
           router.push("/login");
         }
       } catch (error) {
-        console.error("Error fetching user role", error);
-        setLoading(false);
-        router.push("/login");
+        console.error("Error fetching user role (possibly Firebase security rules):", error);
+        // Fallback: If we can't read the role but user is authenticated, 
+        // assume "student" role to prevent infinite login loops.
+        if (allowedRoles.includes("student")) {
+          setLoading(false);
+        } else {
+          router.push("/dashboard"); // Safe fallback
+        }
       }
     });
 

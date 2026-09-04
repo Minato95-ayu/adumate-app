@@ -55,6 +55,10 @@ export default function Dashboard() {
 
   // Auth state listener
   useEffect(() => {
+    if (!auth) {
+      router.push("/login");
+      return;
+    }
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       setUser(firebaseUser);
       if (firebaseUser) {

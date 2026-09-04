@@ -53,6 +53,8 @@ const PHOTOS = [
 
 type Place = {
   id: string;
+  placeId?: string;
+  source?: string;
   name: string;
   address?: string;
   lat: number;
@@ -77,13 +79,16 @@ type Place = {
 
 type RawPlace = {
   id?: string;
+  placeId?: string;
   name?: string;
   address?: string;
   lat?: number | string;
   lon?: number | string;
+  lng?: number | string;
   rating?: number | string | null;
   phone?: string;
   website?: string;
+  photo_reference?: string;
 };
 
 function normalizeUrl(value?: string): string {
@@ -107,6 +112,10 @@ export default function MapClient() {
   const [showFilters, setShowFilters] = useState(false);
   const [showMobileList, setShowMobileList] = useState(false);
   const [selectedPlace, setSelectedPlace] = useState<Place | null>(null);
+  
+  // Track map drag
+  const [mapCenter, setMapCenter] = useState<{ lat: number; lng: number } | null>(null);
+  const showSearchAreaBtn = mapCenter && (Math.abs(mapCenter.lat - userLoc.lat) > 0.005 || Math.abs(mapCenter.lng - userLoc.lng) > 0.005);
 
   const fetchPlaces = useCallback(async (lat: number, lng: number, cat: string) => {
     setLoading(true);
@@ -121,8 +130,11 @@ export default function MapClient() {
       if (!res.ok) throw new Error("API error");
 
       const data = await res.json();
+      const source = data.source;
       const mappedPlaces: Place[] = ((data.places || []) as RawPlace[]).map((p, i: number) => ({
         id: p.id || `${cat}-${i}`,
+        placeId: p.placeId,
+        source: source,
         name: p.name || "",
         address: p.address || "",
         phone: p.phone || "",
@@ -131,8 +143,8 @@ export default function MapClient() {
         fees: p.rating ? `⭐ ${p.rating}` : "Verified service",
         rating: Number(p.rating || (3.8 + Math.random() * 1.1)),
         lat: Number(p.lat),
-        lng: Number(p.lon),
-        photo: PHOTOS[i % PHOTOS.length],
+        lng: Number(p.lng ?? p.lon),
+        photo: p.photo_reference ? `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${p.photo_reference}&key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || ""}` : PHOTOS[i % PHOTOS.length],
         about:
           p.website
             ? "Verified service with public business details. Explore contact options, website, and route guidance instantly."
@@ -366,13 +378,39 @@ export default function MapClient() {
         </aside>
 
         <div className="flex-1 relative">
-        <Map
+          <Map
             providers={filtered as unknown as import("@/data/providers").Provider[]}
             center={userLoc}
             selectedPlace={selectedPlace as unknown as import("@/data/providers").Provider | null}
             onSelectPlace={setSelectedPlace as unknown as (place: import("@/data/providers").Provider | null) => void}
+            onBoundsChange={(center) => setMapCenter(center)}
             onScan={() => fetchPlaces(userLoc.lat, userLoc.lng, selectedCategory)}
           />
+
+          <AnimatePresence>
+            {showSearchAreaBtn && (
+              <motion.div
+                initial={{ opacity: 0, y: -20, x: "-50%" }}
+                animate={{ opacity: 1, y: 0, x: "-50%" }}
+                exit={{ opacity: 0, y: -20, x: "-50%" }}
+                className="absolute top-20 md:top-6 left-1/2 z-40"
+              >
+                <button
+                  onClick={() => {
+                    if (mapCenter) {
+                      setUserLoc(mapCenter);
+                      fetchPlaces(mapCenter.lat, mapCenter.lng, selectedCategory);
+                      setMapCenter(null);
+                    }
+                  }}
+                  className="bg-[#0f172a]/90 backdrop-blur-xl border border-white/10 text-white shadow-2xl px-5 py-2.5 rounded-full font-bold text-sm flex items-center gap-2 hover:bg-[#0f172a] hover:border-orange-500/50 transition-all"
+                >
+                  <Search size={14} className="text-orange-400" />
+                  Search this area
+                </button>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           <div className="absolute bottom-20 md:bottom-5 right-4 flex flex-col gap-2 z-30">
             <button className="w-11 h-11 bg-[#0d1117]/90 backdrop-blur-xl border border-white/10 rounded-xl flex items-center justify-center text-white shadow-xl">
@@ -547,165 +585,6 @@ export default function MapClient() {
           </>
         )}
       </AnimatePresence>
-
-      <AnimatePresence>
-        {selectedPlace && (
-          <motion.div
-            initial={{ y: "100%" }}
-            animate={{ y: 0 }}
-            exit={{ y: "100%" }}
-            transition={{ type: "spring", damping: 28 }}
-            className="fixed bottom-0 left-0 right-0 z-[70] rounded-t-3xl border-t border-white/10 bg-[#0d1117]/98 p-4 shadow-2xl backdrop-blur-xl md:hidden"
-          >
-            <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-white/10" />
-            <div className="flex items-start gap-3">
-              <img src={selectedPlace.photo} alt={selectedPlace.name} className="h-16 w-16 rounded-2xl object-cover border border-white/10" />
-              <div className="min-w-0 flex-1">
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <h3 className="text-base font-black text-white">{selectedPlace.name}</h3>
-                    <p className="mt-1 text-xs text-slate-400">{selectedPlace.address || "Verified nearby service"}</p>
-                  </div>
-                  <button onClick={() => setSelectedPlace(null)} className="rounded-xl bg-white/5 p-2 text-slate-400">
-                    <X size={16} />
-                  </button>
-                </div>
-                <div className="mt-2 flex items-center gap-2">
-                  <Star size={12} className="fill-yellow-400 text-yellow-400" />
-                  <span className="text-xs font-bold text-yellow-400">{Number(selectedPlace.rating).toFixed(1)}</span>
-                  <span className="text-xs text-slate-500">{selectedPlace.subject}</span>
-                </div>
-              </div>
-            </div>
-            <p className="mt-3 text-sm leading-6 text-slate-300">{selectedPlace.about}</p>
-            <div className="mt-3 flex flex-wrap gap-2">
-              {selectedPlace.phone && (
-                <a href={`tel:${selectedPlace.phone}`} className="inline-flex items-center gap-2 rounded-xl bg-orange-500 px-3 py-2 text-xs font-black text-white">
-                  <Phone size={13} />
-                  Call
-                </a>
-              )}
-              {selectedPlace.social.whatsapp && (
-                <a
-                  href={`https://wa.me/${selectedPlace.social.whatsapp}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-flex items-center gap-2 rounded-xl bg-emerald-500 px-3 py-2 text-xs font-black text-white"
-                >
-                  <MessageCircle size={13} />
-                  WhatsApp
-                </a>
-              )}
-              {selectedPlace.website && (
-                <a
-                  href={normalizeUrl(selectedPlace.website)}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-black text-white"
-                >
-                  <Globe size={13} />
-                  Website
-                </a>
-              )}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {selectedPlace && (
-        <div className="hidden lg:block absolute top-4 right-4 z-30 w-[360px] rounded-[28px] border border-white/10 bg-[#0d1117]/92 p-5 shadow-2xl backdrop-blur-xl">
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-500">{cat.label}</p>
-              <h2 className="mt-1 text-2xl font-black text-white">{selectedPlace.name}</h2>
-              <p className="mt-1 text-sm text-slate-400">{selectedPlace.address || "Verified service listing"}</p>
-            </div>
-            <button onClick={() => setSelectedPlace(null)} className="rounded-2xl border border-white/10 bg-white/5 p-2 text-slate-400">
-              <X size={18} />
-            </button>
-          </div>
-
-          <div className="mt-4 grid grid-cols-2 gap-3">
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-3">
-              <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-500">Rating</p>
-              <p className="mt-1 text-lg font-black text-yellow-400">{Number(selectedPlace.rating).toFixed(1)}</p>
-            </div>
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-3">
-              <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-500">Status</p>
-              <p className="mt-1 text-lg font-black text-emerald-400">Route Ready</p>
-            </div>
-          </div>
-
-          <div className="mt-4 rounded-2xl border border-white/10 bg-white/5 p-4">
-            <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-500">About</p>
-            <p className="mt-2 text-sm leading-6 text-slate-200">{selectedPlace.about}</p>
-          </div>
-
-          <div className="mt-4">
-            <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-500">Available Info</p>
-            <div className="mt-2 flex flex-wrap gap-2">
-              {selectedPlace.services.map((service) => (
-                <span key={service} className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-bold text-slate-200">
-                  {service}
-                </span>
-              ))}
-            </div>
-          </div>
-
-          <div className="mt-5 flex flex-wrap gap-2">
-            {selectedPlace.phone && (
-              <a href={`tel:${selectedPlace.phone}`} className="inline-flex items-center gap-2 rounded-xl bg-orange-500 px-3 py-2 text-xs font-black text-white">
-                <Phone size={13} />
-                Call
-              </a>
-            )}
-            {selectedPlace.social.whatsapp && (
-              <a
-                href={`https://wa.me/${selectedPlace.social.whatsapp}`}
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex items-center gap-2 rounded-xl bg-emerald-500 px-3 py-2 text-xs font-black text-white"
-              >
-                <MessageCircle size={13} />
-                WhatsApp
-              </a>
-            )}
-            {selectedPlace.website && (
-              <a
-                href={normalizeUrl(selectedPlace.website)}
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-black text-white"
-              >
-                <Globe size={13} />
-                Website
-              </a>
-            )}
-            {selectedPlace.social.instagram && (
-              <a
-                href={normalizeUrl(selectedPlace.social.instagram)}
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-black text-white"
-              >
-                <Instagram size={13} />
-                Instagram
-              </a>
-            )}
-            {selectedPlace.social.youtube && (
-              <a
-                href={normalizeUrl(selectedPlace.social.youtube)}
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-black text-white"
-              >
-                <Youtube size={13} />
-                YouTube
-              </a>
-            )}
-          </div>
-        </div>
-      )}
     </div>
   );
 }

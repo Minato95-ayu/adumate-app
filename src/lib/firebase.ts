@@ -12,11 +12,10 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
-const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
+const app = getApps().length === 0 && firebaseConfig.apiKey ? initializeApp(firebaseConfig) : getApps().length > 0 ? getApp() : null as any;
 
-export const auth = getAuth(app);
-export const db = initializeFirestore(app, {
+export const auth = app ? getAuth(app) : null as any;
+export const db = app ? initializeFirestore(app, {
   localCache: persistentLocalCache(),
-  experimentalForceLongPolling: true
-});
-export const storage = getStorage(app);
+}) : null as any;
+export const storage = app ? getStorage(app) : null as any;

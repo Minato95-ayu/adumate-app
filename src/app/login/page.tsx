@@ -37,9 +37,17 @@ function LoginForm() {
   const handleUserResult = async (user: any) => {
     try {
       const userRef = doc(db, "users", user.uid);
-      const userSnap = await getDoc(userRef);
+      let userSnap;
+      try {
+        userSnap = await getDoc(userRef);
+      } catch (readError) {
+        console.warn("Could not read user document (possibly due to security rules).", readError);
+      }
       
-      if (!userSnap.exists()) {
+      if (!userSnap || !userSnap.exists()) {
+        // If we couldn't read it or it doesn't exist, we perform a merge write
+        // so we don't accidentally overwrite an existing user's data completely
+        // if they just couldn't read it due to rules.
         await setDoc(userRef, {
           uid: user.uid,
           email: user.email,
@@ -47,7 +55,7 @@ function LoginForm() {
           phone: user.phoneNumber || "",
           role: roleQuery,
           createdAt: new Date().toISOString()
-        });
+        }, { merge: true });
         
         if (roleQuery === "partner") router.push("/partner/register");
         else router.push("/dashboard");

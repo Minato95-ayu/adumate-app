@@ -22,6 +22,10 @@ export default function ProfilePage() {
   const [address, setAddress] = useState("");
 
   useEffect(() => {
+    if (!auth) {
+      router.push("/login");
+      return;
+    }
     const unsubscribe = auth.onAuthStateChanged(async (user) => {
       if (user) {
         const userRef = doc(db, "users", user.uid);

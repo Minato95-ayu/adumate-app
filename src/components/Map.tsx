@@ -93,6 +93,7 @@ interface MapProps {
   onScan?: () => void;
   selectedPlace?: Place | null;
   onSelectPlace?: (place: Place | null) => void;
+  onBoundsChange?: (center: { lat: number; lng: number }) => void;
 }
 
 type TravelMode = "driving" | "walking" | "cycling";
@@ -216,6 +217,20 @@ function DynamicTileLayer({ layer }: { layer: MapLayer }) {
     tileRef.current = t;
     return () => { if (tileRef.current) map.removeLayer(tileRef.current); };
   }, [layer, map]);
+  return null;
+}
+
+function MapEvents({ onChange }: { onChange?: (center: { lat: number; lng: number }) => void }) {
+  const map = useMap();
+  useEffect(() => {
+    if (!onChange) return;
+    const handler = () => {
+      const center = map.getCenter();
+      onChange({ lat: center.lat, lng: center.lng });
+    };
+    map.on('dragend', handler);
+    return () => { map.off('dragend', handler); };
+  }, [map, onChange]);
   return null;
 }
 
@@ -411,6 +426,18 @@ function RichDetailPanel({
           )}
         </div>
 
+        {/* Photo Carousel */}
+        {placeInfo?.photos && placeInfo.photos.length > 0 && (
+          <div className="space-y-2">
+            <p className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-500">Photos</p>
+            <div className="flex gap-2 overflow-x-auto pb-2 snap-x" style={{ scrollbarWidth: "none" }}>
+              {placeInfo.photos.map((url, i) => (
+                <img key={i} src={url} alt={`Photo ${i+1}`} className="h-28 w-40 object-cover rounded-xl shrink-0 snap-start bg-slate-800" loading="lazy" />
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Wikipedia / About */}
         {placeInfo?.wikipedia && (
           <div className="space-y-2">
@@ -425,6 +452,30 @@ function RichDetailPanel({
                   Read more on Wikipedia <ExternalLink size={8} />
                 </a>
               )}
+            </div>
+          </div>
+        )}
+
+        {/* Reviews */}
+        {placeInfo?.reviews && placeInfo.reviews.length > 0 && (
+          <div className="space-y-2">
+            <p className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-500">Reviews</p>
+            <div className="space-y-3">
+              {placeInfo.reviews.slice(0, 3).map((r, i) => (
+                <div key={i} className="rounded-xl bg-white/5 border border-white/10 p-3">
+                  <div className="flex items-center gap-2 mb-2">
+                    <img src={r.profile_photo_url} alt={r.author_name} className="w-6 h-6 rounded-full bg-slate-700" />
+                    <div className="flex-1">
+                      <p className="text-xs font-bold text-white leading-none">{r.author_name}</p>
+                      <p className="text-[9px] text-slate-400 mt-0.5">{r.relative_time_description}</p>
+                    </div>
+                    <div className="text-[10px] font-bold text-amber-400 bg-amber-400/10 px-1.5 py-0.5 rounded">
+                      ⭐ {r.rating}
+                    </div>
+                  </div>
+                  <p className="text-xs text-slate-300 leading-relaxed line-clamp-3">{r.text}</p>
+                </div>
+              ))}
             </div>
           </div>
         )}
@@ -621,7 +672,7 @@ function RouteDiscoverySidebar({
 }
 
 // ══════════════════════════════════════════════════════════════════════════
-export default function Map({ providers, center = { lat: 28.6139, lng: 77.209 }, onScan, selectedPlace, onSelectPlace }: MapProps) {
+export default function Map({ providers, center = { lat: 28.6139, lng: 77.209 }, onScan, selectedPlace, onSelectPlace, onBoundsChange }: MapProps) {
 
   // Inject CSS animations once
   useEffect(() => {
@@ -679,6 +730,27 @@ export default function Map({ providers, center = { lat: 28.6139, lng: 77.209 },
     setShowPanel(true);
     setPanelPlace(place);
     try {
+      const p = place as any; // Bypass TS checking for custom fields
+      if (p.source === "google" && p.placeId) {
+        // Fetch from the new rich details API
+        const res = await fetch(`/api/place-details?placeId=${p.placeId}`);
+        const data = await res.json();
+        
+        setPlaceInfo({
+          name: data.name || p.name,
+          address: data.address,
+          phone: data.phone,
+          website: data.website,
+          image: data.photos?.[0], // First photo as hero image
+          // Map to existing PlaceInfo fields or keep raw for extended rendering
+          opening_hours: data.openingHours?.join(', ') || undefined,
+          photos: data.photos, // We will extend the PlaceInfo type to include photos and reviews below
+          reviews: data.reviews,
+        } as any);
+        return;
+      }
+
+      // Fallback for OSM places or if google details fail
       const phone = "routeProgress" in place ? (place as unknown as RoutePlace).phone : (place as unknown as Place).phone;
       const website = "routeProgress" in place ? (place as unknown as RoutePlace).website : (place as unknown as Place).website;
       const params = new URLSearchParams({
@@ -698,6 +770,13 @@ export default function Map({ providers, center = { lat: 28.6139, lng: 77.209 },
       setPlaceInfoLoading(false);
     }
   }, []);
+
+  // ── Sync external selectedPlace with RichDetailPanel ─────────────────
+  useEffect(() => {
+    if (selectedPlace && selectedPlace.id !== (panelPlace as any)?.id) {
+      fetchPlaceInfo(selectedPlace);
+    }
+  }, [selectedPlace, panelPlace, fetchPlaceInfo]);
 
   // ── Route Discovery: fetch services along route ─────────────────────
   const discoverAlongRoute = useCallback(async (coords: [number, number][]) => {
@@ -841,6 +920,7 @@ export default function Map({ providers, center = { lat: 28.6139, lng: 77.209 },
 
       <MapContainer center={[center.lat, center.lng]} zoom={13} scrollWheelZoom className="h-full w-full" style={{ height: "100%", width: "100%", zIndex: 0 }} zoomControl={false}>
         <DynamicTileLayer layer={mapLayer} />
+        <MapEvents onChange={onBoundsChange} />
         <MapController center={center}
           selectedPlace={selectedRoutePlace || (selectedPlace as unknown as Place | RoutePlace | null)}
           routePoints={routePoints}

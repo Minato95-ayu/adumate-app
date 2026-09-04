@@ -16,6 +16,14 @@ export interface PlaceInfo {
   address?: string;
   opening_hours?: string;
   image?: string;
+  photos?: string[];
+  reviews?: Array<{
+    author_name: string;
+    profile_photo_url: string;
+    rating: number;
+    text: string;
+    relative_time_description: string;
+  }>;
 }
 
 // ── 1. OSM Overpass — get social tags by coords ────────────────────────────
