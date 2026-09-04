@@ -28,7 +28,7 @@ export default function ProfilePage() {
       router.push("/login");
       return;
     }
-    const unsubscribe = auth.onAuthStateChanged(async (user) => {
+    const unsubscribe = auth.onAuthStateChanged(async (user: any) => {
       if (user) {
         const userRef = doc(db, "users", user.uid);
         const userSnap = await getDoc(userRef);
